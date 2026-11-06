@@ -172,7 +172,7 @@ export function matchCvToJob(cv: string, jobPost: string): BasicMatch {
 
   const suggestions: string[] = [];
   for (const s of missingRequired.slice(0, 4)) {
-    suggestions.push(`If you've used ${s}, mention it in a project bullet — it's listed as a requirement.`);
+    suggestions.push(`“${s}” is listed as a requirement — if you have that experience, mention it in a project bullet.`);
   }
   if (missingOptional.length) {
     suggestions.push(`Nice-to-haves you could add if you know them: ${missingOptional.slice(0, 4).join(", ")}.`);
