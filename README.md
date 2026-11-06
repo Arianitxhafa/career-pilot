@@ -4,7 +4,9 @@
 
 CareerPilot keeps every job application on one Kanban board — from the first save to the offer — and shows the numbers that matter: how many applications you sent, your response rate, interviews and offers. Built for students entering the job market.
 
-> **Live demo:** _coming soon_ · **Status:** MVP — AI co-pilot in progress
+> **Live demo:** [career-pilot-weld-six.vercel.app](https://career-pilot-weld-six.vercel.app) · **Status:** MVP — AI co-pilot in progress
+
+![CareerPilot dashboard](docs/dashboard.webp)
 
 ---
 
