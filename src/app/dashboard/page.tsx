@@ -33,6 +33,7 @@ export default async function DashboardPage() {
   for (const row of analysisRows ?? []) {
     if (!analyses[row.application_id]) analyses[row.application_id] = row as Analysis;
   }
+  const aiEnabled = Boolean(process.env.ANTHROPIC_API_KEY);
   const name = (user.user_metadata?.full_name as string | undefined)?.split(" ")[0];
 
   return (
@@ -47,12 +48,12 @@ export default async function DashboardPage() {
           </div>
           {!hasCv && (
             <Link href="/dashboard/cv" className="rounded-xl border border-amber/40 bg-amber/10 px-3.5 py-2 text-sm font-medium transition hover:bg-amber/20">
-              ✨ Add your CV to unlock the AI co-pilot →
+              ✨ Add your CV to unlock the co-pilot →
             </Link>
           )}
         </div>
         <StatsBar stats={computeStats(applications)} />
-        <Board applications={applications} analyses={analyses} hasCv={hasCv} />
+        <Board applications={applications} analyses={analyses} hasCv={hasCv} aiEnabled={aiEnabled} />
       </main>
     </div>
   );

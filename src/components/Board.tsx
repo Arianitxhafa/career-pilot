@@ -8,9 +8,9 @@ import type { Analysis } from "@/app/dashboard/copilot-actions";
 
 type Editing = { app?: Application; status: Status } | null;
 
-type BoardProps = { applications: Application[]; analyses: Record<string, Analysis>; hasCv: boolean };
+type BoardProps = { applications: Application[]; analyses: Record<string, Analysis>; hasCv: boolean; aiEnabled: boolean };
 
-export function Board({ applications, analyses, hasCv }: BoardProps) {
+export function Board({ applications, analyses, hasCv, aiEnabled }: BoardProps) {
   const [, startTransition] = useTransition();
   const [apps, moveOptimistic] = useOptimistic(applications, (state, move: { id: string; status: Status }) =>
     state.map((a) => (a.id === move.id ? { ...a, status: move.status } : a))
@@ -43,6 +43,7 @@ export function Board({ applications, analyses, hasCv }: BoardProps) {
       onClose={() => setEditing(null)}
       analysis={editing?.app ? analyses[editing.app.id] : undefined}
       hasCv={hasCv}
+      aiEnabled={aiEnabled}
     />
   );
 
@@ -167,7 +168,7 @@ export function Board({ applications, analyses, hasCv }: BoardProps) {
                           <p className="text-xs font-medium text-muted">{app.company}</p>
                           {analyses[app.id] && (
                             <span
-                              title="AI match score"
+                              title="Co-pilot match score"
                               className="rounded-md bg-brand-soft px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-brand"
                             >
                               ✨ {analyses[app.id].score}

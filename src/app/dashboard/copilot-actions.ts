@@ -4,8 +4,11 @@ import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { analyzeMatch, CopilotError, type MatchResult } from "@/lib/copilot";
+import { matchCvToJob } from "@/lib/matcher";
 
-export type Analysis = { score: number; result: MatchResult; created_at: string };
+// "ai" = Claude analysis with a cover letter; "basic" = free keyword match. Older rows have no mode (they were AI).
+export type AnalysisResult = MatchResult & { mode?: "ai" | "basic" };
+export type Analysis = { score: number; result: AnalysisResult; created_at: string };
 export type AnalyzeState = { analysis?: Analysis; remaining?: number; error?: string } | undefined;
 export type CvState = { ok?: boolean; error?: string } | undefined;
 
@@ -57,16 +60,20 @@ export async function analyzeApplication(_prev: AnalyzeState, formData: FormData
   const cv = profile?.cv_text?.trim() ?? "";
   if (cv.length < MIN_CV) return { error: "Add your CV first — open “My CV” and paste its text." };
 
+  // Without an API key, fall back to the free keyword matcher.
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return saveAnalysis(supabase, applicationId, matchCvToJob(cv, jobPost));
+  }
+
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { count } = await supabase
     .from("ai_analyses")
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id)
-    .gte("created_at", since);
+    .gte("created_at", since)
+    .eq("result->>mode", "ai");
   const used = count ?? 0;
-  if (used >= DAILY_LIMIT) return { error: `You've used all ${DAILY_LIMIT} analyses for today — try again tomorrow.`, remaining: 0 };
-
-  if (!process.env.ANTHROPIC_API_KEY) return { error: "The AI co-pilot isn't configured on this server yet." };
+  if (used >= DAILY_LIMIT) return { error: `You've used all ${DAILY_LIMIT} AI analyses for today — try again tomorrow.`, remaining: 0 };
 
   let result: MatchResult;
   try {
@@ -82,13 +89,22 @@ export async function analyzeApplication(_prev: AnalyzeState, formData: FormData
     throw error;
   }
 
-  const { data: saved, error: saveError } = await supabase
+  const saved = await saveAnalysis(supabase, applicationId, { ...result, mode: "ai" });
+  return saved?.analysis ? { ...saved, remaining: DAILY_LIMIT - used - 1 } : saved;
+}
+
+async function saveAnalysis(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  applicationId: string,
+  result: AnalysisResult
+): Promise<AnalyzeState> {
+  const { data: saved, error } = await supabase
     .from("ai_analyses")
     .insert({ application_id: applicationId, score: result.score, result })
     .select("score, result, created_at")
     .single();
-  if (saveError || !saved) return { error: "The analysis worked but couldn't be saved — please try again." };
+  if (error || !saved) return { error: "The analysis worked but couldn't be saved — please try again." };
 
   revalidatePath("/dashboard");
-  return { analysis: saved as Analysis, remaining: DAILY_LIMIT - used - 1 };
+  return { analysis: saved as Analysis };
 }

@@ -11,12 +11,13 @@ type Props = {
   onClose: () => void;
   analysis?: Analysis;
   hasCv: boolean;
+  aiEnabled: boolean;
 };
 
 const field =
   "w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-fg outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-4 focus:ring-brand/15";
 
-export function ApplicationDialog({ editing, onClose, analysis, hasCv }: Props) {
+export function ApplicationDialog({ editing, onClose, analysis, hasCv, aiEnabled }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -40,6 +41,7 @@ export function ApplicationDialog({ editing, onClose, analysis, hasCv }: Props) 
           editing={editing}
           analysis={analysis}
           hasCv={hasCv}
+          aiEnabled={aiEnabled}
           close={() => ref.current?.close()}
         />
       )}
@@ -47,9 +49,9 @@ export function ApplicationDialog({ editing, onClose, analysis, hasCv }: Props) 
   );
 }
 
-type BodyProps = { editing: NonNullable<Props["editing"]>; analysis?: Analysis; hasCv: boolean; close: () => void };
+type BodyProps = { editing: NonNullable<Props["editing"]>; analysis?: Analysis; hasCv: boolean; aiEnabled: boolean; close: () => void };
 
-function DialogBody({ editing, analysis, hasCv, close }: BodyProps) {
+function DialogBody({ editing, analysis, hasCv, aiEnabled, close }: BodyProps) {
   const app = editing.app;
   const [tab, setTab] = useState<"details" | "copilot">("details");
   const tabClass = (active: boolean) =>
@@ -73,12 +75,12 @@ function DialogBody({ editing, analysis, hasCv, close }: BodyProps) {
             Details
           </button>
           <button type="button" role="tab" aria-selected={tab === "copilot"} onClick={() => setTab("copilot")} className={tabClass(tab === "copilot")}>
-            ✨ AI co-pilot{analysis ? ` · ${analysis.score}` : ""}
+            ✨ Co-pilot{analysis ? ` · ${analysis.score}` : ""}
           </button>
         </div>
       )}
 
-      {app && tab === "copilot" ? <CopilotPanel app={app} initial={analysis} hasCv={hasCv} /> : <DialogForm editing={editing} close={close} />}
+      {app && tab === "copilot" ? <CopilotPanel app={app} initial={analysis} hasCv={hasCv} aiEnabled={aiEnabled} /> : <DialogForm editing={editing} close={close} />}
     </div>
   );
 }

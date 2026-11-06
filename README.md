@@ -21,7 +21,9 @@ CareerPilot keeps every job application on one Kanban board — from the first s
 - **Secure accounts** — Supabase Auth with server-side session checks
 - **Private by design** — Postgres Row Level Security: every user can only read and change their own rows
 - **Dark and light theme** following the system setting
-- ✨ **AI co-pilot (Claude)** — paste a job post and get a 0–100 match score against your CV, the requirements you already meet, missing keywords, concrete CV edits and a tailored cover letter
+- ✨ **Co-pilot** — paste a job post and get a 0–100 match score against your CV, the skills you already show, missing keywords and concrete CV edits
+  - **Free keyword matcher** (`src/lib/matcher.ts`, unit-tested): detects 70+ technologies by alias, weighs nice-to-haves at half and runs instantly with no API costs
+  - **AI mode (Claude)**: switches on automatically when `ANTHROPIC_API_KEY` is set, and adds a deeper analysis and a tailored cover letter
 
 ### Coming next
 - CV upload from PDF
@@ -43,7 +45,7 @@ CareerPilot keeps every job application on one Kanban board — from the first s
 - **Server Components** load the board on the server, so the page arrives with data already rendered.
 - **Server Actions** (`src/app/dashboard/actions.ts`) handle create, update, move and delete — each one verifies the signed-in user and validates input.
 - **`src/proxy.ts`** (Next.js 16's replacement for middleware) refreshes the Supabase session and redirects signed-out visitors away from the dashboard.
-- **AI co-pilot** (`src/lib/copilot.ts`) calls Claude with a Zod schema as a structured output, so the response is always valid, typed JSON. The CV and job post are treated as untrusted data in the prompt, each user gets a daily analysis limit, and every result is stored in `ai_analyses` behind RLS.
+- **Co-pilot** uses the free matcher by default. With an API key, `src/lib/copilot.ts` calls Claude with a Zod schema as a structured output, so the response is always valid, typed JSON. The CV and job post are treated as untrusted data in the prompt, each user gets a daily analysis limit, and every result is stored in `ai_analyses` behind RLS.
 - **Database rules live in the database** — `supabase/schema.sql` defines RLS policies, length checks and a trigger that keeps `updated_at` fresh and stamps `applied_at` the first time an application leaves "Saved".
 
 ## 🚀 Run locally
@@ -52,6 +54,7 @@ CareerPilot keeps every job application on one Kanban board — from the first s
 npm install
 cp .env.local.example .env.local   # add your Supabase URL, publishable key and Anthropic API key
 npm run dev
+npm test        # matcher unit tests (Node's built-in test runner)
 ```
 
 1. Create a Supabase project and run `supabase/schema.sql` in the SQL editor.

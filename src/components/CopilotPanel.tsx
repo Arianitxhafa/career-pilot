@@ -3,9 +3,17 @@
 import Link from "next/link";
 import { useActionState, useState, useTransition } from "react";
 import type { Application } from "@/lib/applications";
-import { analyzeApplication, type Analysis } from "@/app/dashboard/copilot-actions";
+import {
+  analyzeApplication,
+  type Analysis,
+} from "@/app/dashboard/copilot-actions";
 
-type Props = { app: Application; initial?: Analysis; hasCv: boolean };
+type Props = {
+  app: Application;
+  initial?: Analysis;
+  hasCv: boolean;
+  aiEnabled: boolean;
+};
 
 function scoreTone(score: number) {
   if (score >= 75) return { color: "#10b981", label: "Strong match" };
@@ -13,8 +21,11 @@ function scoreTone(score: number) {
   return { color: "#f43f5e", label: "Big gaps" };
 }
 
-export function CopilotPanel({ app, initial, hasCv }: Props) {
-  const [state, action, pending] = useActionState(analyzeApplication, undefined);
+export function CopilotPanel({ app, initial, hasCv, aiEnabled }: Props) {
+  const [state, action, pending] = useActionState(
+    analyzeApplication,
+    undefined,
+  );
   const [, startAnalyze] = useTransition();
   const [copied, setCopied] = useState(false);
   const analysis = state?.analysis ?? initial;
@@ -24,8 +35,14 @@ export function CopilotPanel({ app, initial, hasCv }: Props) {
       <div className="grid place-items-center gap-3 rounded-2xl border border-dashed border-line px-6 py-10 text-center">
         <span className="text-3xl">📄</span>
         <p className="font-semibold">Add your CV to unlock the co-pilot</p>
-        <p className="max-w-sm text-sm text-muted">The co-pilot compares your CV with this job post, scores the match and writes a tailored cover letter.</p>
-        <Link href="/dashboard/cv" className="mt-1 rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-brand-ink shadow-lg shadow-brand/25 hover:brightness-110">
+        <p className="max-w-sm text-sm text-muted">
+          The co-pilot compares your CV with this job post, scores the match and
+          shows which skills you already have and which are missing.
+        </p>
+        <Link
+          href="/dashboard/cv"
+          className="mt-1 rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-brand-ink shadow-lg shadow-brand/25 hover:brightness-110"
+        >
           Add my CV
         </Link>
       </div>
@@ -56,7 +73,11 @@ export function CopilotPanel({ app, initial, hasCv }: Props) {
         </label>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs text-muted">
-            {typeof state?.remaining === "number" ? `${state.remaining} analyses left today` : "Powered by Claude · a few analyses per day"}
+            {!aiEnabled
+              ? "Free keyword match · runs instantly"
+              : typeof state?.remaining === "number"
+                ? `${state.remaining} AI analyses left today`
+                : "Powered by Claude · a few analyses per day"}
           </p>
           <button
             type="submit"
@@ -65,7 +86,8 @@ export function CopilotPanel({ app, initial, hasCv }: Props) {
           >
             {pending ? (
               <>
-                <span className="size-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" /> Analysing… (~20s)
+                <span className="size-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />{" "}
+                Analysing…{aiEnabled ? " (~20s)" : ""}
               </>
             ) : analysis ? (
               "✨ Analyse again"
@@ -75,42 +97,72 @@ export function CopilotPanel({ app, initial, hasCv }: Props) {
           </button>
         </div>
         {state?.error && (
-          <p role="alert" className="rounded-xl bg-rose-500/10 px-3.5 py-2.5 text-sm text-rose-600 dark:text-rose-400">
+          <p
+            role="alert"
+            className="rounded-xl bg-rose-500/10 px-3.5 py-2.5 text-sm text-rose-600 dark:text-rose-400"
+          >
             {state.error}
           </p>
         )}
       </form>
 
-      {analysis && <AnalysisView analysis={analysis} copied={copied} onCopy={() => {
-        navigator.clipboard?.writeText(analysis.result.cover_letter).then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        });
-      }} />}
+      {analysis && (
+        <AnalysisView
+          analysis={analysis}
+          copied={copied}
+          onCopy={() => {
+            navigator.clipboard
+              ?.writeText(analysis.result.cover_letter)
+              .then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              });
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function AnalysisView({ analysis, copied, onCopy }: { analysis: Analysis; copied: boolean; onCopy: () => void }) {
+function AnalysisView({
+  analysis,
+  copied,
+  onCopy,
+}: {
+  analysis: Analysis;
+  copied: boolean;
+  onCopy: () => void;
+}) {
   const { result } = analysis;
   const tone = scoreTone(analysis.score);
+  const isAi = result.mode !== "basic";
 
   return (
     <section aria-label="Co-pilot analysis" className="grid gap-4 animate-rise">
       <div className="flex items-center gap-4 rounded-2xl border border-line bg-surface-2/60 p-4">
         <div
           className="grid size-20 shrink-0 place-items-center rounded-full"
-          style={{ background: `conic-gradient(${tone.color} ${analysis.score * 3.6}deg, var(--line) 0deg)` }}
+          style={{
+            background: `conic-gradient(${tone.color} ${analysis.score * 3.6}deg, var(--line) 0deg)`,
+          }}
           role="img"
           aria-label={`Match score ${analysis.score} out of 100`}
         >
           <div className="grid size-16 place-items-center rounded-full bg-surface">
-            <span className="text-2xl font-bold tabular-nums">{analysis.score}</span>
+            <span className="text-2xl font-bold tabular-nums">
+              {analysis.score}
+            </span>
           </div>
         </div>
         <div>
-          <p className="text-sm font-semibold" style={{ color: tone.color }}>
+          <p
+            className="flex flex-wrap items-center gap-2 text-sm font-semibold"
+            style={{ color: tone.color }}
+          >
             {tone.label}
+            <span className="rounded-md bg-surface px-1.5 py-0.5 text-[11px] font-medium text-muted">
+              {isAi ? "AI analysis" : "Keyword match"}
+            </span>
           </p>
           <p className="mt-0.5 text-sm">{result.verdict}</p>
         </div>
@@ -118,7 +170,9 @@ function AnalysisView({ analysis, copied, onCopy }: { analysis: Analysis; copied
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <h3 className="text-xs font-semibold tracking-wider text-muted uppercase">You already show</h3>
+          <h3 className="text-xs font-semibold tracking-wider text-muted uppercase">
+            You already show
+          </h3>
           <ul className="mt-2 grid gap-1.5 text-sm">
             {result.strengths.map((s) => (
               <li key={s} className="flex gap-2">
@@ -129,11 +183,16 @@ function AnalysisView({ analysis, copied, onCopy }: { analysis: Analysis; copied
           </ul>
         </div>
         <div>
-          <h3 className="text-xs font-semibold tracking-wider text-muted uppercase">Missing keywords</h3>
+          <h3 className="text-xs font-semibold tracking-wider text-muted uppercase">
+            Missing keywords
+          </h3>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {result.missing_keywords.length ? (
               result.missing_keywords.map((k) => (
-                <span key={k} className="rounded-md bg-rose-500/10 px-2 py-0.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+                <span
+                  key={k}
+                  className="rounded-md bg-rose-500/10 px-2 py-0.5 text-xs font-medium text-rose-600 dark:text-rose-400"
+                >
                   {k}
                 </span>
               ))
@@ -145,7 +204,9 @@ function AnalysisView({ analysis, copied, onCopy }: { analysis: Analysis; copied
       </div>
 
       <div>
-        <h3 className="text-xs font-semibold tracking-wider text-muted uppercase">Tailor your CV</h3>
+        <h3 className="text-xs font-semibold tracking-wider text-muted uppercase">
+          Tailor your CV
+        </h3>
         <ol className="mt-2 grid list-decimal gap-1.5 pl-5 text-sm">
           {result.suggestions.map((s) => (
             <li key={s}>{s}</li>
@@ -153,20 +214,42 @@ function AnalysisView({ analysis, copied, onCopy }: { analysis: Analysis; copied
         </ol>
       </div>
 
-      <div>
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-semibold tracking-wider text-muted uppercase">Cover letter draft</h3>
-          <button type="button" onClick={onCopy} className="rounded-lg px-2 py-1 text-xs font-semibold text-brand hover:bg-brand-soft">
-            {copied ? "✓ Copied" : "Copy"}
-          </button>
+      {result.cover_letter ? (
+        <div>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold tracking-wider text-muted uppercase">
+              Cover letter draft
+            </h3>
+            <button
+              type="button"
+              onClick={onCopy}
+              className="rounded-lg px-2 py-1 text-xs font-semibold text-brand hover:bg-brand-soft"
+            >
+              {copied ? "✓ Copied" : "Copy"}
+            </button>
+          </div>
+          <p className="mt-2 max-h-64 overflow-y-auto rounded-xl border border-line bg-surface-2/50 p-3 text-sm leading-relaxed whitespace-pre-wrap">
+            {result.cover_letter}
+          </p>
         </div>
-        <p className="mt-2 max-h-64 overflow-y-auto rounded-xl border border-line bg-surface-2/50 p-3 text-sm leading-relaxed whitespace-pre-wrap">
-          {result.cover_letter}
+      ) : (
+        <p className="rounded-xl border border-dashed border-line px-3.5 py-2.5 text-xs text-muted">
+          ✨ AI analysis — with a tailored cover letter written by Claude — is
+          coming to this demo. The keyword match above runs for free.
         </p>
-      </div>
+      )}
 
       <p className="text-xs text-muted">
-        Generated {new Date(analysis.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} by Claude. Always review before sending.
+        Generated{" "}
+        {new Date(analysis.created_at).toLocaleString("en-GB", {
+          day: "numeric",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+        {isAi
+          ? " by Claude. Always review before sending."
+          : " by keyword matching — a quick guide, not a verdict."}
       </p>
     </section>
   );
