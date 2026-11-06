@@ -66,3 +66,39 @@ $$;
 create trigger applications_before_write
   before insert or update on public.applications
   for each row execute function public.applications_before_write();
+
+-- ─── AI co-pilot ──────────────────────────────────────────────────────────
+
+-- Job post text per application, used by the AI co-pilot
+alter table public.applications
+  add column job_description text check (char_length(job_description) <= 20000);
+
+-- One CV per user
+create table public.profiles (
+  user_id uuid primary key default auth.uid() references auth.users(id) on delete cascade,
+  cv_text text not null default '' check (char_length(cv_text) <= 20000),
+  updated_at timestamptz not null default now()
+);
+alter table public.profiles enable row level security;
+create policy "Users can view own profile" on public.profiles for select to authenticated using ((select auth.uid()) = user_id);
+create policy "Users can insert own profile" on public.profiles for insert to authenticated with check ((select auth.uid()) = user_id);
+create policy "Users can update own profile" on public.profiles for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+
+-- AI analyses (also used for the per-user daily limit)
+create table public.ai_analyses (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  application_id uuid not null references public.applications(id) on delete cascade,
+  score smallint not null check (score between 0 and 100),
+  result jsonb not null,
+  created_at timestamptz not null default now()
+);
+create index ai_analyses_application_idx on public.ai_analyses (application_id, created_at desc);
+create index ai_analyses_user_created_idx on public.ai_analyses (user_id, created_at desc);
+alter table public.ai_analyses enable row level security;
+create policy "Users can view own analyses" on public.ai_analyses for select to authenticated using ((select auth.uid()) = user_id);
+create policy "Users can insert own analyses" on public.ai_analyses for insert to authenticated
+  with check (
+    (select auth.uid()) = user_id
+    and exists (select 1 from public.applications a where a.id = application_id and a.user_id = (select auth.uid()))
+  );

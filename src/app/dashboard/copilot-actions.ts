@@ -1,0 +1,94 @@
+"use server";
+
+import Anthropic from "@anthropic-ai/sdk";
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+import { analyzeMatch, CopilotError, type MatchResult } from "@/lib/copilot";
+
+export type Analysis = { score: number; result: MatchResult; created_at: string };
+export type AnalyzeState = { analysis?: Analysis; remaining?: number; error?: string } | undefined;
+export type CvState = { ok?: boolean; error?: string } | undefined;
+
+const DAILY_LIMIT = Number(process.env.AI_DAILY_LIMIT ?? 5);
+const MIN_JOB_POST = 200;
+const MIN_CV = 300;
+
+async function requireUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not signed in");
+  return { supabase, user };
+}
+
+export async function saveCv(_prev: CvState, formData: FormData): Promise<CvState> {
+  const { supabase, user } = await requireUser();
+  const cv = String(formData.get("cv_text") ?? "").trim();
+  if (cv.length > 20000) return { error: "Your CV is too long — keep it under 20,000 characters." };
+
+  const { error } = await supabase
+    .from("profiles")
+    .upsert({ user_id: user.id, cv_text: cv, updated_at: new Date().toISOString() });
+  if (error) return { error: "Couldn't save your CV — please try again." };
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/cv");
+  return { ok: true };
+}
+
+export async function analyzeApplication(_prev: AnalyzeState, formData: FormData): Promise<AnalyzeState> {
+  const { supabase, user } = await requireUser();
+  const applicationId = String(formData.get("application_id") ?? "");
+  const jobPost = String(formData.get("job_description") ?? "").trim().slice(0, 20000);
+
+  // Save the job post first so it's kept even if the analysis fails.
+  const { data: app, error: appError } = await supabase
+    .from("applications")
+    .update({ job_description: jobPost || null })
+    .eq("id", applicationId)
+    .select("company, position")
+    .single();
+  if (appError || !app) return { error: "Couldn't find this application." };
+
+  if (jobPost.length < MIN_JOB_POST) return { error: "Paste the full job post (at least a few paragraphs) so the co-pilot has enough to work with." };
+
+  const { data: profile } = await supabase.from("profiles").select("cv_text").eq("user_id", user.id).maybeSingle();
+  const cv = profile?.cv_text?.trim() ?? "";
+  if (cv.length < MIN_CV) return { error: "Add your CV first — open “My CV” and paste its text." };
+
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { count } = await supabase
+    .from("ai_analyses")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .gte("created_at", since);
+  const used = count ?? 0;
+  if (used >= DAILY_LIMIT) return { error: `You've used all ${DAILY_LIMIT} analyses for today — try again tomorrow.`, remaining: 0 };
+
+  if (!process.env.ANTHROPIC_API_KEY) return { error: "The AI co-pilot isn't configured on this server yet." };
+
+  let result: MatchResult;
+  try {
+    result = await analyzeMatch({ cv, jobPost, company: app.company, position: app.position });
+  } catch (error) {
+    if (error instanceof CopilotError) return { error: error.message };
+    if (error instanceof Anthropic.RateLimitError) return { error: "The co-pilot is busy right now — try again in a minute." };
+    if (error instanceof Anthropic.AuthenticationError) return { error: "The AI co-pilot isn't configured correctly on this server." };
+    if (error instanceof Anthropic.APIError) {
+      console.error("Claude API error", error.status, error.message);
+      return { error: "The co-pilot is unavailable right now — please try again." };
+    }
+    throw error;
+  }
+
+  const { data: saved, error: saveError } = await supabase
+    .from("ai_analyses")
+    .insert({ application_id: applicationId, score: result.score, result })
+    .select("score, result, created_at")
+    .single();
+  if (saveError || !saved) return { error: "The analysis worked but couldn't be saved — please try again." };
+
+  revalidatePath("/dashboard");
+  return { analysis: saved as Analysis, remaining: DAILY_LIMIT - used - 1 };
+}

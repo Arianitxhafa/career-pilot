@@ -10,6 +10,7 @@ export type Application = {
   salary_range: string | null;
   job_url: string | null;
   notes: string | null;
+  job_description: string | null;
   applied_at: string | null;
   created_at: string;
   updated_at: string;

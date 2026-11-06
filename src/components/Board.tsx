@@ -4,10 +4,13 @@ import { useMemo, useOptimistic, useState, useTransition } from "react";
 import { STATUSES, STATUS_META, type Application, type Status } from "@/lib/applications";
 import { loadSampleData, moveApplication } from "@/app/dashboard/actions";
 import { ApplicationDialog } from "./ApplicationDialog";
+import type { Analysis } from "@/app/dashboard/copilot-actions";
 
 type Editing = { app?: Application; status: Status } | null;
 
-export function Board({ applications }: { applications: Application[] }) {
+type BoardProps = { applications: Application[]; analyses: Record<string, Analysis>; hasCv: boolean };
+
+export function Board({ applications, analyses, hasCv }: BoardProps) {
   const [, startTransition] = useTransition();
   const [apps, moveOptimistic] = useOptimistic(applications, (state, move: { id: string; status: Status }) =>
     state.map((a) => (a.id === move.id ? { ...a, status: move.status } : a))
@@ -34,7 +37,14 @@ export function Board({ applications }: { applications: Application[] }) {
   }
 
   // One dialog for both views, so it stays the same element when the first application appears.
-  const dialog = <ApplicationDialog editing={editing} onClose={() => setEditing(null)} />;
+  const dialog = (
+    <ApplicationDialog
+      editing={editing}
+      onClose={() => setEditing(null)}
+      analysis={editing?.app ? analyses[editing.app.id] : undefined}
+      hasCv={hasCv}
+    />
+  );
 
   if (applications.length === 0) {
     return (
@@ -153,7 +163,17 @@ export function Board({ applications }: { applications: Application[] }) {
                         aria-label={`Edit ${app.position} at ${app.company}`}
                         className="block w-full text-left"
                       >
-                        <p className="text-xs font-medium text-muted">{app.company}</p>
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-xs font-medium text-muted">{app.company}</p>
+                          {analyses[app.id] && (
+                            <span
+                              title="AI match score"
+                              className="rounded-md bg-brand-soft px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-brand"
+                            >
+                              ✨ {analyses[app.id].score}
+                            </span>
+                          )}
+                        </div>
                         <h3 className="mt-0.5 font-semibold leading-snug">{app.position}</h3>
                         <div className="mt-2.5 flex flex-wrap gap-1.5 text-xs text-muted">
                           {app.location && <span className="rounded-md bg-surface-2 px-1.5 py-0.5">📍 {app.location}</span>}

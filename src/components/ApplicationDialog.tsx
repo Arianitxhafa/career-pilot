@@ -3,16 +3,20 @@
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { STATUSES, STATUS_META, type Application, type Status } from "@/lib/applications";
 import { deleteApplication, saveApplication } from "@/app/dashboard/actions";
+import type { Analysis } from "@/app/dashboard/copilot-actions";
+import { CopilotPanel } from "./CopilotPanel";
 
 type Props = {
   editing: { app?: Application; status: Status } | null;
   onClose: () => void;
+  analysis?: Analysis;
+  hasCv: boolean;
 };
 
 const field =
   "w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-fg outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-4 focus:ring-brand/15";
 
-export function ApplicationDialog({ editing, onClose }: Props) {
+export function ApplicationDialog({ editing, onClose, analysis, hasCv }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -27,11 +31,55 @@ export function ApplicationDialog({ editing, onClose }: Props) {
       ref={ref}
       onClose={onClose}
       onClick={(e) => e.target === ref.current && ref.current?.close()}
-      className="m-auto w-[min(560px,calc(100vw-2rem))] rounded-3xl border border-line bg-surface p-0 text-fg shadow-2xl"
+      className="m-auto w-[min(640px,calc(100vw-2rem))] rounded-3xl border border-line bg-surface p-0 text-fg shadow-2xl"
     >
       {/* Remount the form for each open so it starts from fresh values. */}
-      {editing && <DialogForm key={editing.app?.id ?? `new-${editing.status}`} editing={editing} close={() => ref.current?.close()} />}
+      {editing && (
+        <DialogBody
+          key={editing.app?.id ?? `new-${editing.status}`}
+          editing={editing}
+          analysis={analysis}
+          hasCv={hasCv}
+          close={() => ref.current?.close()}
+        />
+      )}
     </dialog>
+  );
+}
+
+type BodyProps = { editing: NonNullable<Props["editing"]>; analysis?: Analysis; hasCv: boolean; close: () => void };
+
+function DialogBody({ editing, analysis, hasCv, close }: BodyProps) {
+  const app = editing.app;
+  const [tab, setTab] = useState<"details" | "copilot">("details");
+  const tabClass = (active: boolean) =>
+    `rounded-lg px-3 py-1.5 text-sm font-semibold transition ${active ? "bg-surface text-fg shadow-sm" : "text-muted hover:text-fg"}`;
+
+  return (
+    <div className="grid gap-4 p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-bold tracking-tight">{app ? "Edit application" : "New application"}</h2>
+          <p className="text-sm text-muted">{app ? `${app.company} · ${app.position}` : "Track a job you want or already applied to."}</p>
+        </div>
+        <button type="button" onClick={close} aria-label="Close" className="grid size-8 place-items-center rounded-lg text-muted hover:bg-surface-2">
+          ✕
+        </button>
+      </div>
+
+      {app && (
+        <div role="tablist" className="flex gap-1 rounded-xl bg-surface-2 p-1">
+          <button type="button" role="tab" aria-selected={tab === "details"} onClick={() => setTab("details")} className={tabClass(tab === "details")}>
+            Details
+          </button>
+          <button type="button" role="tab" aria-selected={tab === "copilot"} onClick={() => setTab("copilot")} className={tabClass(tab === "copilot")}>
+            ✨ AI co-pilot{analysis ? ` · ${analysis.score}` : ""}
+          </button>
+        </div>
+      )}
+
+      {app && tab === "copilot" ? <CopilotPanel app={app} initial={analysis} hasCv={hasCv} /> : <DialogForm editing={editing} close={close} />}
+    </div>
   );
 }
 
@@ -54,17 +102,8 @@ function DialogForm({ editing, close }: { editing: NonNullable<Props["editing"]>
         const data = new FormData(e.currentTarget);
         startSave(() => action(data));
       }}
-      className="grid gap-4 p-6"
+      className="grid gap-4"
     >
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-lg font-bold tracking-tight">{app ? "Edit application" : "New application"}</h2>
-          <p className="text-sm text-muted">{app ? `${app.company} · ${app.position}` : "Track a job you want or already applied to."}</p>
-        </div>
-        <button type="button" onClick={close} aria-label="Close" className="grid size-8 place-items-center rounded-lg text-muted hover:bg-surface-2">
-          ✕
-        </button>
-      </div>
 
       {app && <input type="hidden" name="id" value={app.id} />}
 
