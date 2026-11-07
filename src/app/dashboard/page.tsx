@@ -3,7 +3,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { computeStats, type Application } from "@/lib/applications";
-import { DashboardHeader } from "@/components/DashboardHeader";
 import { Board } from "@/components/Board";
 import { StatsBar } from "@/components/StatsBar";
 import type { Analysis } from "./copilot-actions";
@@ -34,20 +33,24 @@ export default async function DashboardPage() {
     if (!analyses[row.application_id]) analyses[row.application_id] = row as Analysis;
   }
   const aiEnabled = Boolean(process.env.ANTHROPIC_API_KEY);
-  const name = (user.user_metadata?.full_name as string | undefined)?.split(" ")[0];
+  const name = user.is_anonymous ? "Pilot" : (user.user_metadata?.full_name as string | undefined)?.split(" ")[0];
+  const hour = Number(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hour12: false, timeZone: "Europe/Belgrade" }).format(new Date()));
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const today = new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "Europe/Belgrade" }).toUpperCase();
 
   return (
     <div className="flex flex-1 flex-col">
-      <DashboardHeader email={user.email} active="board" />
-
       <main className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
         <div className="flex flex-wrap items-end justify-between gap-4 animate-rise">
           <div>
-            <p className="text-sm font-medium text-brand">Mission control</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">{name ? `Good to see you, ${name}.` : "Your job search"}</h1>
+            <p className="font-mono text-xs font-bold tracking-[0.22em] text-brand">MISSION CONTROL · {today}</p>
+            <h1 className="mt-2 font-display text-4xl font-bold tracking-tight sm:text-5xl">
+              {greeting}
+              {name ? <span className="text-brand">, {name}.</span> : "."}
+            </h1>
           </div>
           {!hasCv && (
-            <Link href="/dashboard/cv" className="rounded-xl border border-amber/40 bg-amber/10 px-3.5 py-2 text-sm font-medium transition hover:bg-amber/20">
+            <Link href="/dashboard/cv" className="rounded-xl border border-amber/40 bg-amber-soft px-3.5 py-2 text-sm font-medium transition hover:border-amber">
               ✨ Add your CV to unlock the co-pilot →
             </Link>
           )}

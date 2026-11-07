@@ -4,9 +4,19 @@ import { useMemo, useOptimistic, useState, useTransition } from "react";
 import { STATUSES, STATUS_META, type Application, type Status } from "@/lib/applications";
 import { loadSampleData, moveApplication } from "@/app/dashboard/actions";
 import { ApplicationDialog } from "./ApplicationDialog";
+import { toast } from "./Toaster";
+import { primaryButton, secondaryButton } from "./ui";
+import { Plus, Search } from "lucide-react";
 import type { Analysis } from "@/app/dashboard/copilot-actions";
 
 type Editing = { app?: Application; status: Status } | null;
+
+/** A stable "flight number" for a card: company initials + a number from its id. */
+function flightCode(app: Application) {
+  const letters = app.company.replace(/[^A-Za-z]/g, "").slice(0, 2).toUpperCase() || "CP";
+  const n = ([...app.id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 900, 7)) + 100;
+  return `${letters} ${n}`;
+}
 
 type BoardProps = { applications: Application[]; analyses: Record<string, Analysis>; hasCv: boolean; aiEnabled: boolean };
 
@@ -33,6 +43,7 @@ export function Board({ applications, analyses, hasCv, aiEnabled }: BoardProps) 
     startTransition(async () => {
       moveOptimistic({ id, status });
       await moveApplication(id, status);
+      toast(status === "offer" ? `🎉 ${current.company} — offer landed!` : `${current.company} moved to ${STATUS_META[status].label}`);
     });
   }
 
@@ -50,24 +61,17 @@ export function Board({ applications, analyses, hasCv, aiEnabled }: BoardProps) 
   if (applications.length === 0) {
     return (
       <>
-        <section className="animate-rise grid place-items-center rounded-3xl border border-dashed border-line bg-surface px-6 py-16 text-center">
+        <section className="animate-rise grid place-items-center rounded-3xl border border-dashed border-line bg-surface px-6 py-16 text-center shadow-card">
           <span className="grid size-14 place-items-center rounded-2xl bg-brand-soft text-2xl">🧭</span>
-          <h2 className="mt-4 text-xl font-bold tracking-tight">Your board is ready for take-off</h2>
+          <h2 className="mt-4 font-display text-3xl font-bold tracking-tight">Your board is ready for take-off</h2>
           <p className="mt-2 max-w-md text-sm text-muted">
             Add every job you&apos;re interested in, then drag it across the board as you apply, interview and get offers.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <button
-              onClick={() => setEditing({ status: "saved" })}
-              className="rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-brand-ink shadow-lg shadow-brand/25 transition hover:brightness-110"
-            >
-              + Add your first application
+            <button onClick={() => setEditing({ status: "saved" })} className={primaryButton}>
+              <Plus className="size-4" /> Add your first application
             </button>
-            <button
-              onClick={() => startSeeding(() => loadSampleData())}
-              disabled={seeding}
-              className="rounded-xl border border-line px-4 py-2.5 text-sm font-semibold transition hover:bg-surface-2 disabled:opacity-60"
-            >
+            <button onClick={() => startSeeding(() => loadSampleData())} disabled={seeding} className={secondaryButton}>
               {seeding ? "Loading…" : "Try with sample data"}
             </button>
           </div>
@@ -82,23 +86,17 @@ export function Board({ applications, analyses, hasCv, aiEnabled }: BoardProps) 
     <section aria-label="Application board" className="flex flex-1 flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="relative w-full max-w-xs">
-          <svg viewBox="0 0 24 24" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-            <circle cx="11" cy="11" r="7" />
-            <path d="m20 20-3.5-3.5" />
-          </svg>
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted" aria-hidden />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search company, role or city"
             aria-label="Search applications"
-            className="w-full rounded-xl border border-line bg-surface py-2 pr-3 pl-9 text-sm outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/15"
+            className="w-full rounded-xl border border-line bg-surface py-2.5 pr-3 pl-9 text-sm shadow-card outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/15"
           />
         </div>
-        <button
-          onClick={() => setEditing({ status: "saved" })}
-          className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-brand-ink shadow-lg shadow-brand/25 transition hover:brightness-110"
-        >
-          + New application
+        <button onClick={() => setEditing({ status: "saved" })} className={`${primaryButton} group`}>
+          <Plus className="size-4 transition group-hover:rotate-90" /> New application
         </button>
       </div>
 
@@ -122,15 +120,15 @@ export function Board({ applications, analyses, hasCv, aiEnabled }: BoardProps) 
                 setDragId(null);
                 if (id) move(id, status);
               }}
-              className={`flex w-72 shrink-0 snap-start flex-col rounded-2xl border bg-surface-2/60 p-3 transition lg:w-auto ${
-                isOver ? `border-brand ring-4 ${meta.ring}` : "border-line"
+              className={`flex w-72 shrink-0 snap-start flex-col rounded-2xl border bg-surface-2/70 p-3 backdrop-blur-sm transition lg:w-auto ${
+                isOver ? `scale-[1.01] border-brand ring-4 ${meta.ring}` : "border-line"
               }`}
             >
               <div className="mb-3 flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
                   <span className={`size-2.5 rounded-full ${meta.dot}`} />
-                  <h2 className="text-sm font-semibold">{meta.label}</h2>
-                  <span className="rounded-full bg-surface px-2 py-0.5 text-xs font-medium tabular-nums text-muted">{items.length}</span>
+                  <h2 className="font-mono text-xs font-bold tracking-[0.18em] uppercase">{meta.label}</h2>
+                  <span className="rounded-full bg-surface px-2 py-0.5 font-mono text-xs font-medium tabular-nums text-muted">{items.length}</span>
                 </div>
                 <button
                   onClick={() => setEditing({ status })}
@@ -155,44 +153,54 @@ export function Board({ applications, analyses, hasCv, aiEnabled }: BoardProps) 
                         setDragId(null);
                         setOverCol(null);
                       }}
-                      className={`group cursor-grab rounded-xl border border-line bg-surface p-3.5 shadow-sm transition hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md active:cursor-grabbing ${
-                        dragId === app.id ? "opacity-40" : ""
+                      style={{ "--at": "calc(100% - 46px)" } as React.CSSProperties}
+                      className={`pass group relative cursor-grab overflow-hidden rounded-2xl border border-line bg-surface shadow-card transition hover:-translate-y-0.5 hover:border-brand/40 active:cursor-grabbing ${
+                        dragId === app.id ? "rotate-2 opacity-40" : ""
                       }`}
                     >
-                      <button
-                        onClick={() => setEditing({ app, status: app.status })}
-                        aria-label={`Edit ${app.position} at ${app.company}`}
-                        className="block w-full text-left"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-xs font-medium text-muted">{app.company}</p>
-                          {analyses[app.id] && (
-                            <span
-                              title="Co-pilot match score"
-                              className="rounded-md bg-brand-soft px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-brand"
-                            >
-                              ✨ {analyses[app.id].score}
-                            </span>
-                          )}
+                      <span className={`absolute inset-y-0 left-0 w-1 ${meta.dot}`} aria-hidden />
+                      <button onClick={() => setEditing({ app, status: app.status })} aria-label={`Edit ${app.position} at ${app.company}`} className="block w-full text-left">
+                        <div className="px-4 pt-3.5 pb-3">
+                          <div className="flex items-center justify-between gap-2 font-mono text-[10px] tracking-[0.18em] text-muted">
+                            <span>{flightCode(app)}</span>
+                            {analyses[app.id] && (
+                              <span
+                                title="Co-pilot match score"
+                                className={`rounded-md px-1.5 py-0.5 text-[11px] font-bold tabular-nums tracking-normal ${
+                                  analyses[app.id].score >= 75
+                                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300"
+                                    : analyses[app.id].score >= 50
+                                      ? "bg-brand-soft text-brand"
+                                      : "bg-amber-soft text-amber"
+                                }`}
+                              >
+                                ✦ {analyses[app.id].score}
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-2 truncate text-xs font-medium text-muted">{app.company}</p>
+                          <h3 className="font-display text-[17px] leading-snug font-bold">{app.position}</h3>
                         </div>
-                        <h3 className="mt-0.5 font-semibold leading-snug">{app.position}</h3>
-                        <div className="mt-2.5 flex flex-wrap gap-1.5 text-xs text-muted">
-                          {app.location && <span className="rounded-md bg-surface-2 px-1.5 py-0.5">📍 {app.location}</span>}
-                          {app.salary_range && <span className="rounded-md bg-surface-2 px-1.5 py-0.5">💶 {app.salary_range}</span>}
-                          {app.applied_at && (
-                            <span className="rounded-md bg-surface-2 px-1.5 py-0.5">
-                              🗓 {new Date(app.applied_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                        <div className="flex h-[46px] items-center gap-3 border-t border-dashed border-line px-4 font-mono text-[10px] text-muted">
+                          <span className="min-w-0 truncate">
+                            <span className="block tracking-widest">GATE</span>
+                            <b className="text-fg">{app.location || "—"}</b>
+                          </span>
+                          {app.salary_range && (
+                            <span className="min-w-0 truncate">
+                              <span className="block tracking-widest">PAY</span>
+                              <b className="text-fg">{app.salary_range}</b>
                             </span>
                           )}
+                          <span className="ml-auto shrink-0 text-right">
+                            <span className="block tracking-widest">{app.applied_at ? "SENT" : "SAVED"}</span>
+                            <b className="text-fg">{new Date(app.applied_at ?? app.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" }).toUpperCase()}</b>
+                          </span>
                         </div>
                       </button>
-                      <label className="mt-3 flex items-center gap-2 border-t border-line pt-2.5 text-xs text-muted lg:hidden">
+                      <label className="flex items-center gap-2 border-t border-line px-4 py-2 text-xs text-muted lg:hidden">
                         Move to
-                        <select
-                          value={app.status}
-                          onChange={(e) => move(app.id, e.target.value as Status)}
-                          className="flex-1 rounded-md border border-line bg-surface px-1.5 py-1 text-fg"
-                        >
+                        <select value={app.status} onChange={(e) => move(app.id, e.target.value as Status)} className="flex-1 rounded-md border border-line bg-surface px-1.5 py-1 text-fg">
                           {STATUSES.map((s) => (
                             <option key={s} value={s}>
                               {STATUS_META[s].label}

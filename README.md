@@ -4,13 +4,16 @@
 
 CareerPilot keeps every job application on one Kanban board — from the first save to the offer — and shows the numbers that matter: how many applications you sent, your response rate, interviews and offers. Built for students entering the job market.
 
-> **Live demo:** [career-pilot-weld-six.vercel.app](https://career-pilot-weld-six.vercel.app) · **Status:** MVP with AI co-pilot
+> **Live:** [career-pilot-weld-six.vercel.app](https://career-pilot-weld-six.vercel.app) — click **Try the live demo** to explore a full board without signing up.
 
 ![CareerPilot dashboard](docs/dashboard.webp)
 
 ---
 
 ## ✨ Features
+
+- **"Flight deck" design** — a split-flap departures board on the landing page, applications as boarding passes, a flight route from Saved to Offer drawn on scroll, an instrument-panel dashboard with count-up readouts, toasts, dark and light themes and `prefers-reduced-motion` support
+- **One-click demo** — an anonymous Supabase session gets a private board with 11 applications, a CV and co-pilot scores; a trigger in a private schema deletes demo accounts (and, by cascade, their data) after 24 hours
 
 - **Kanban pipeline** — Saved → Applied → Interview → Offer → Rejected, with drag and drop on desktop and a "Move to" menu on mobile
 - **Stats at a glance** — applications tracked and sent, response rate, interviews and offers
@@ -26,8 +29,9 @@ CareerPilot keeps every job application on one Kanban board — from the first s
   - **AI mode (Claude)**: switches on automatically when `ANTHROPIC_API_KEY` is set, and adds a deeper analysis and a tailored cover letter
 
 ### Coming next
-- CV upload from PDF
-- Interview reminders and follow-up dates
+- Interviews, follow-up reminders and a calendar (with .ics export)
+- Insights: funnel, weekly activity and a weekly goal
+- CV upload from PDF and match scores across all saved jobs
 
 ## 🛠 Tech stack
 

@@ -102,3 +102,34 @@ create policy "Users can insert own analyses" on public.ai_analyses for insert t
     (select auth.uid()) = user_id
     and exists (select 1 from public.applications a where a.id = application_id and a.user_id = (select auth.uid()))
   );
+
+-- ---------------------------------------------------------------------------
+-- One-click demo: visitors sign in anonymously (enable "Allow anonymous
+-- sign-ins" in Authentication → Sign In / Providers). Whenever a new demo
+-- starts, demo accounts older than 24 hours are deleted — and by cascade their
+-- applications, CV and analyses. It runs from a trigger in a private schema,
+-- so nothing is exposed through the API.
+create schema if not exists private;
+revoke all on schema private from public, anon, authenticated;
+
+create or replace function private.purge_old_demo_users()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  delete from auth.users
+  where is_anonymous
+    and created_at < now() - interval '24 hours';
+  return null;
+end;
+$$;
+
+revoke all on function private.purge_old_demo_users() from public, anon, authenticated;
+
+create trigger purge_old_demo_users
+  after insert on auth.users
+  for each row
+  when (new.is_anonymous)
+  execute function private.purge_old_demo_users();

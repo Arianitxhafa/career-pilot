@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { STATUSES, STATUS_META, type Application, type Status } from "@/lib/applications";
 import { deleteApplication, saveApplication } from "@/app/dashboard/actions";
+import { toast } from "./Toaster";
 import type { Analysis } from "@/app/dashboard/copilot-actions";
 import { CopilotPanel } from "./CopilotPanel";
 
@@ -93,8 +94,10 @@ function DialogForm({ editing, close }: { editing: NonNullable<Props["editing"]>
   const [, startSave] = useTransition();
 
   useEffect(() => {
-    if (state?.ok) close();
-  }, [state, close]);
+    if (!state?.ok) return;
+    toast(app ? "Boarding pass updated" : "New application on the board ✈");
+    close();
+  }, [state, close, app]);
 
   return (
     <form
@@ -167,6 +170,7 @@ function DialogForm({ editing, close }: { editing: NonNullable<Props["editing"]>
               if (!confirmDelete) return setConfirmDelete(true);
               startDelete(async () => {
                 await deleteApplication(app.id);
+                toast(`${app.company} removed from your board`);
                 close();
               });
             }}
