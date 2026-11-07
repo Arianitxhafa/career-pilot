@@ -6,24 +6,33 @@ import { computeStats, type Application } from "@/lib/applications";
 import { Board } from "@/components/Board";
 import { StatsBar } from "@/components/StatsBar";
 import type { Analysis } from "./copilot-actions";
+import type { Contact, HistoryEntry } from "@/lib/applications";
+import type { AppEvent } from "@/lib/events";
+import type { DialogTab } from "@/components/ApplicationDialog";
+import { ThisWeek } from "@/components/plan/ThisWeek";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ open?: string; tab?: string }> }) {
+  const { open, tab } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data }, { data: profile }, { data: analysisRows }] = await Promise.all([
+  const [{ data }, { data: profile }, { data: analysisRows }, { data: eventRows }, { data: contactRows }, { data: historyRows }] = await Promise.all([
     supabase
       .from("applications")
       .select("id, company, position, status, location, salary_range, job_url, notes, job_description, applied_at, created_at, updated_at")
       .order("updated_at", { ascending: false }),
     supabase.from("profiles").select("cv_text").eq("user_id", user.id).maybeSingle(),
     supabase.from("ai_analyses").select("application_id, score, result, created_at").order("created_at", { ascending: false }).limit(200),
+    supabase.from("events").select("id, application_id, kind, title, starts_at, duration_minutes, location, notes, done").order("starts_at").limit(500),
+    supabase.from("contacts").select("id, application_id, name, role, email, phone, linkedin, notes").order("created_at").limit(500),
+    supabase.from("application_history").select("id, application_id, from_status, to_status, created_at").order("created_at").limit(1000),
   ]);
+  const events = (eventRows ?? []) as AppEvent[];
 
   const applications = (data ?? []) as Application[];
   const hasCv = (profile?.cv_text?.trim().length ?? 0) >= 300;
@@ -56,7 +65,18 @@ export default async function DashboardPage() {
           )}
         </div>
         <StatsBar stats={computeStats(applications)} />
-        <Board applications={applications} analyses={analyses} hasCv={hasCv} aiEnabled={aiEnabled} />
+        <ThisWeek events={events} applications={applications} />
+        <Board
+          applications={applications}
+          analyses={analyses}
+          hasCv={hasCv}
+          aiEnabled={aiEnabled}
+          events={events}
+          contacts={(contactRows ?? []) as Contact[]}
+          history={(historyRows ?? []) as HistoryEntry[]}
+          openId={open}
+          openTab={["details", "plan", "people", "history", "copilot"].includes(tab ?? "") ? (tab as DialogTab) : undefined}
+        />
       </main>
     </div>
   );

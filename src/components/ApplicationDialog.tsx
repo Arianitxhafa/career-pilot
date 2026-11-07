@@ -1,24 +1,33 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
-import { STATUSES, STATUS_META, type Application, type Status } from "@/lib/applications";
+import { STATUSES, STATUS_META, type Application, type Contact, type HistoryEntry, type Status } from "@/lib/applications";
+import type { AppEvent } from "@/lib/events";
+import { PlanPanel } from "./plan/PlanPanel";
+import { PeoplePanel } from "./plan/PeoplePanel";
+import { HistoryPanel } from "./plan/HistoryPanel";
 import { deleteApplication, saveApplication } from "@/app/dashboard/actions";
 import { toast } from "./Toaster";
 import type { Analysis } from "@/app/dashboard/copilot-actions";
 import { CopilotPanel } from "./CopilotPanel";
 
+export type DialogTab = "details" | "plan" | "people" | "history" | "copilot";
+
 type Props = {
-  editing: { app?: Application; status: Status } | null;
+  editing: { app?: Application; status: Status; tab?: DialogTab } | null;
   onClose: () => void;
   analysis?: Analysis;
   hasCv: boolean;
   aiEnabled: boolean;
+  events: AppEvent[];
+  contacts: Contact[];
+  history: HistoryEntry[];
 };
 
 const field =
   "w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-fg outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-4 focus:ring-brand/15";
 
-export function ApplicationDialog({ editing, onClose, analysis, hasCv, aiEnabled }: Props) {
+export function ApplicationDialog({ editing, onClose, analysis, hasCv, aiEnabled, events, contacts, history }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -33,7 +42,7 @@ export function ApplicationDialog({ editing, onClose, analysis, hasCv, aiEnabled
       ref={ref}
       onClose={onClose}
       onClick={(e) => e.target === ref.current && ref.current?.close()}
-      className="m-auto w-[min(640px,calc(100vw-2rem))] rounded-3xl border border-line bg-surface p-0 text-fg shadow-2xl"
+      className="m-auto max-h-[calc(100dvh-2rem)] w-[min(680px,calc(100vw-2rem))] overflow-y-auto rounded-3xl border border-line bg-surface p-0 text-fg shadow-2xl"
     >
       {/* Remount the form for each open so it starts from fresh values. */}
       {editing && (
@@ -43,6 +52,9 @@ export function ApplicationDialog({ editing, onClose, analysis, hasCv, aiEnabled
           analysis={analysis}
           hasCv={hasCv}
           aiEnabled={aiEnabled}
+          events={events}
+          contacts={contacts}
+          history={history}
           close={() => ref.current?.close()}
         />
       )}
@@ -50,13 +62,21 @@ export function ApplicationDialog({ editing, onClose, analysis, hasCv, aiEnabled
   );
 }
 
-type BodyProps = { editing: NonNullable<Props["editing"]>; analysis?: Analysis; hasCv: boolean; aiEnabled: boolean; close: () => void };
+type BodyProps = Omit<Props, "onClose" | "editing"> & { editing: NonNullable<Props["editing"]>; close: () => void };
 
-function DialogBody({ editing, analysis, hasCv, aiEnabled, close }: BodyProps) {
+function DialogBody({ editing, analysis, hasCv, aiEnabled, events, contacts, history, close }: BodyProps) {
   const app = editing.app;
-  const [tab, setTab] = useState<"details" | "copilot">("details");
+  const [tab, setTab] = useState<DialogTab>(editing.tab ?? "details");
   const tabClass = (active: boolean) =>
-    `rounded-lg px-3 py-1.5 text-sm font-semibold transition ${active ? "bg-surface text-fg shadow-sm" : "text-muted hover:text-fg"}`;
+    `shrink-0 rounded-lg px-3 py-1.5 text-sm font-semibold whitespace-nowrap transition ${active ? "bg-surface text-fg shadow-sm" : "text-muted hover:text-fg"}`;
+  const open = events.filter((e) => !e.done).length;
+  const TABS: { id: DialogTab; label: string }[] = [
+    { id: "details", label: "Details" },
+    { id: "plan", label: `📅 Plan${open ? ` · ${open}` : ""}` },
+    { id: "people", label: `People${contacts.length ? ` · ${contacts.length}` : ""}` },
+    { id: "history", label: "History" },
+    { id: "copilot", label: `✨ Co-pilot${analysis ? ` · ${analysis.score}` : ""}` },
+  ];
 
   return (
     <div className="grid gap-4 p-6">
@@ -71,17 +91,26 @@ function DialogBody({ editing, analysis, hasCv, aiEnabled, close }: BodyProps) {
       </div>
 
       {app && (
-        <div role="tablist" className="flex gap-1 rounded-xl bg-surface-2 p-1">
-          <button type="button" role="tab" aria-selected={tab === "details"} onClick={() => setTab("details")} className={tabClass(tab === "details")}>
-            Details
-          </button>
-          <button type="button" role="tab" aria-selected={tab === "copilot"} onClick={() => setTab("copilot")} className={tabClass(tab === "copilot")}>
-            ✨ Co-pilot{analysis ? ` · ${analysis.score}` : ""}
-          </button>
+        <div role="tablist" aria-label="Application sections" className="-mx-1 flex gap-1 overflow-x-auto rounded-xl bg-surface-2 p-1">
+          {TABS.map((t) => (
+            <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)} className={tabClass(tab === t.id)}>
+              {t.label}
+            </button>
+          ))}
         </div>
       )}
 
-      {app && tab === "copilot" ? <CopilotPanel app={app} initial={analysis} hasCv={hasCv} aiEnabled={aiEnabled} /> : <DialogForm editing={editing} close={close} />}
+      {app && tab === "copilot" ? (
+        <CopilotPanel app={app} initial={analysis} hasCv={hasCv} aiEnabled={aiEnabled} />
+      ) : app && tab === "plan" ? (
+        <PlanPanel app={app} events={events} />
+      ) : app && tab === "people" ? (
+        <PeoplePanel app={app} contacts={contacts} />
+      ) : app && tab === "history" ? (
+        <HistoryPanel app={app} history={history} events={events} />
+      ) : (
+        <DialogForm editing={editing} close={close} />
+      )}
     </div>
   );
 }

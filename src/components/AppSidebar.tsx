@@ -12,7 +12,7 @@ type NavItem = { href: string; label: string; icon: LucideIcon; ready: boolean; 
 const NAV: NavItem[] = [
   { href: "/dashboard", label: "Board", icon: KanbanSquare, ready: true, code: "BRD" },
   { href: "/dashboard/cv", label: "CV & co-pilot", icon: FileUser, ready: true, code: "CVC" },
-  { href: "/dashboard/calendar", label: "Calendar", icon: CalendarDays, ready: false, code: "CAL" },
+  { href: "/dashboard/calendar", label: "Calendar", icon: CalendarDays, ready: true, code: "CAL" },
   { href: "/dashboard/insights", label: "Insights", icon: BarChart3, ready: false, code: "INS" },
 ];
 

@@ -40,3 +40,16 @@ export function computeStats(apps: Application[]) {
     responseRate: sent === 0 ? 0 : Math.round((responses / sent) * 100),
   };
 }
+
+export type Contact = {
+  id: string;
+  application_id: string;
+  name: string;
+  role: string | null;
+  email: string | null;
+  phone: string | null;
+  linkedin: string | null;
+  notes: string | null;
+};
+
+export type HistoryEntry = { id: string; application_id: string; from_status: Status | null; to_status: Status; created_at: string };

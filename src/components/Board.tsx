@@ -8,8 +8,11 @@ import { toast } from "./Toaster";
 import { primaryButton, secondaryButton } from "./ui";
 import { Plus, Search } from "lucide-react";
 import type { Analysis } from "@/app/dashboard/copilot-actions";
+import type { Contact, HistoryEntry } from "@/lib/applications";
+import { nextEventByApplication, whenLabel, EVENT_META, type AppEvent } from "@/lib/events";
+import type { DialogTab } from "./ApplicationDialog";
 
-type Editing = { app?: Application; status: Status } | null;
+type Editing = { app?: Application; status: Status; tab?: DialogTab } | null;
 
 /** A stable "flight number" for a card: company initials + a number from its id. */
 function flightCode(app: Application) {
@@ -18,9 +21,20 @@ function flightCode(app: Application) {
   return `${letters} ${n}`;
 }
 
-type BoardProps = { applications: Application[]; analyses: Record<string, Analysis>; hasCv: boolean; aiEnabled: boolean };
+type BoardProps = {
+  applications: Application[];
+  analyses: Record<string, Analysis>;
+  hasCv: boolean;
+  aiEnabled: boolean;
+  events: AppEvent[];
+  contacts: Contact[];
+  history: HistoryEntry[];
+  /** Open this application's dialog on load (e.g. from the calendar). */
+  openId?: string;
+  openTab?: DialogTab;
+};
 
-export function Board({ applications, analyses, hasCv, aiEnabled }: BoardProps) {
+export function Board({ applications, analyses, hasCv, aiEnabled, events, contacts, history, openId, openTab }: BoardProps) {
   const [, startTransition] = useTransition();
   const [apps, moveOptimistic] = useOptimistic(applications, (state, move: { id: string; status: Status }) =>
     state.map((a) => (a.id === move.id ? { ...a, status: move.status } : a))
@@ -28,7 +42,12 @@ export function Board({ applications, analyses, hasCv, aiEnabled }: BoardProps) 
   const [query, setQuery] = useState("");
   const [dragId, setDragId] = useState<string | null>(null);
   const [overCol, setOverCol] = useState<Status | null>(null);
-  const [editing, setEditing] = useState<Editing>(null);
+  const [editing, setEditing] = useState<Editing>(() => {
+    const app = openId ? applications.find((a) => a.id === openId) : undefined;
+    return app ? { app, status: app.status, tab: openTab } : null;
+  });
+  const nextEvent = useMemo(() => nextEventByApplication(events), [events]);
+  const editingId = editing?.app?.id;
   const [seeding, startSeeding] = useTransition();
 
   const visible = useMemo(() => {
@@ -55,6 +74,9 @@ export function Board({ applications, analyses, hasCv, aiEnabled }: BoardProps) 
       analysis={editing?.app ? analyses[editing.app.id] : undefined}
       hasCv={hasCv}
       aiEnabled={aiEnabled}
+      events={editingId ? events.filter((e) => e.application_id === editingId) : []}
+      contacts={editingId ? contacts.filter((c) => c.application_id === editingId) : []}
+      history={editingId ? history.filter((h) => h.application_id === editingId) : []}
     />
   );
 
@@ -180,6 +202,20 @@ export function Board({ applications, analyses, hasCv, aiEnabled }: BoardProps) 
                           </div>
                           <p className="mt-2 truncate text-xs font-medium text-muted">{app.company}</p>
                           <h3 className="font-display text-[17px] leading-snug font-bold">{app.position}</h3>
+                          {nextEvent[app.id] && (() => {
+                            const e = nextEvent[app.id];
+                            const w = whenLabel(e);
+                            return (
+                              <p
+                                className={`mt-2 inline-flex max-w-full items-center gap-1.5 truncate rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${
+                                  w.urgent ? "bg-rose-500/12 text-rose-600 dark:text-rose-300" : EVENT_META[e.kind].chip
+                                }`}
+                              >
+                                <span className={`size-1.5 shrink-0 rounded-full ${w.urgent ? "bg-rose-500" : EVENT_META[e.kind].dot}`} />
+                                {EVENT_META[e.kind].label} · {w.text}
+                              </p>
+                            );
+                          })()}
                         </div>
                         <div className="flex h-[46px] items-center gap-3 border-t border-dashed border-line px-4 font-mono text-[10px] text-muted">
                           <span className="min-w-0 truncate">

@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { DEMO_APPLICATIONS, DEMO_CV } from "@/lib/demo-data";
+import { DEMO_APPLICATIONS, DEMO_CONTACTS, DEMO_CV, DEMO_EVENTS, demoPath } from "@/lib/demo-data";
 import { matchCvToJob } from "@/lib/matcher";
 
 export type DemoState = { error?: string } | undefined;
@@ -37,7 +37,7 @@ export async function startDemo(): Promise<DemoState> {
   }));
 
   const [{ data: inserted, error: appsError }] = await Promise.all([
-    supabase.from("applications").insert(rows).select("id, job_description"),
+    supabase.from("applications").insert(rows).select("id, company, job_description"),
     supabase.from("profiles").upsert({ user_id: data.user.id, cv_text: DEMO_CV, updated_at: new Date().toISOString() }),
   ]);
   if (appsError || !inserted) {
@@ -52,7 +52,44 @@ export async function startDemo(): Promise<DemoState> {
       const result = { ...matchCvToJob(DEMO_CV, a.job_description!), mode: "basic" as const };
       return { application_id: a.id, score: result.score, result };
     });
-  if (analyses.length) await supabase.from("ai_analyses").insert(analyses);
+  const idOf = new Map(inserted.map((a) => [a.company as string, a.id as string]));
+  const at = (inDays: number, hour: number, minutes = 0) => {
+    const d = new Date(Date.now() + inDays * 86_400_000);
+    // Demo times are in Kosovo time (UTC+1 in winter, +2 in summer); close enough for sample data.
+    d.setUTCHours(hour - 1, minutes, 0, 0);
+    return d.toISOString();
+  };
+  const history = DEMO_APPLICATIONS.flatMap((a) =>
+    demoPath(a.status, a.daysAgo, a.appliedDaysAgo).map((h) => ({
+      application_id: idOf.get(a.company)!,
+      from_status: h.from,
+      to_status: h.to,
+      created_at: daysAgo(h.daysAgo).toISOString(),
+    }))
+  );
+
+  await Promise.all([
+    analyses.length ? supabase.from("ai_analyses").insert(analyses) : null,
+    supabase.from("events").insert(
+      DEMO_EVENTS.map((e) => ({
+        application_id: idOf.get(e.company)!,
+        kind: e.kind,
+        title: e.title,
+        starts_at: at(e.inDays, e.hour, e.minutes),
+        duration_minutes: e.duration ?? 60,
+        location: e.location ?? null,
+        notes: e.notes ?? null,
+        done: e.done ?? false,
+      }))
+    ),
+    supabase.from("contacts").insert(DEMO_CONTACTS.map(({ company, ...c }) => ({ application_id: idOf.get(company)!, ...c }))),
+    // Replace the single "added" rows the trigger wrote with a realistic journey.
+    supabase
+      .from("application_history")
+      .delete()
+      .in("application_id", inserted.map((a) => a.id))
+      .then(() => supabase.from("application_history").insert(history)),
+  ]);
 
   redirect("/dashboard?demo=1");
 }

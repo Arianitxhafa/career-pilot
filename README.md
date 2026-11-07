@@ -13,6 +13,10 @@ CareerPilot keeps every job application on one Kanban board — from the first s
 ## ✨ Features
 
 - **"Flight deck" design** — a split-flap departures board on the landing page, applications as boarding passes, a flight route from Saved to Offer drawn on scroll, an instrument-panel dashboard with count-up readouts, toasts, dark and light themes and `prefers-reduced-motion` support
+- **Interviews & follow-ups** — plan interviews (time, duration, meeting link or address), follow-ups and deadlines per application; one-click "follow up in a week"; overdue follow-ups turn red on the card
+- **Calendar** — month view with navigation, "Needs attention" and "Upcoming" lists, and a **This week** strip on the board
+- **.ics export** — add any event (or all upcoming ones) to Google Calendar, Apple Calendar or Outlook, with a reminder an hour before (RFC 5545 escaping and line folding, unit-tested)
+- **People & history** — recruiters and interviewers per application (email, phone, LinkedIn), and a timeline of every stage change written by a Postgres trigger
 - **One-click demo** — an anonymous Supabase session gets a private board with 11 applications, a CV and co-pilot scores; a trigger in a private schema deletes demo accounts (and, by cascade, their data) after 24 hours
 
 - **Kanban pipeline** — Saved → Applied → Interview → Offer → Rejected, with drag and drop on desktop and a "Move to" menu on mobile
@@ -29,7 +33,6 @@ CareerPilot keeps every job application on one Kanban board — from the first s
   - **AI mode (Claude)**: switches on automatically when `ANTHROPIC_API_KEY` is set, and adds a deeper analysis and a tailored cover letter
 
 ### Coming next
-- Interviews, follow-up reminders and a calendar (with .ics export)
 - Insights: funnel, weekly activity and a weekly goal
 - CV upload from PDF and match scores across all saved jobs
 

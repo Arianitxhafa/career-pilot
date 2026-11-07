@@ -103,3 +103,49 @@ export const DEMO_APPLICATIONS: DemoApp[] = [
   { company: "Bluepeak Agency", position: "Web Developer", status: "rejected", location: "Mitrovica", daysAgo: 35, appliedDaysAgo: 33, notes: "Asked for more backend experience — building it now." },
   { company: "Sigma Fintech", position: "Graduate Developer", status: "rejected", location: "Tirana", daysAgo: 40, appliedDaysAgo: 38 },
 ];
+
+// ---- Phase 2: what's on the demo calendar, who the demo pilot talks to ------------------
+
+type DemoEvent = {
+  company: string;
+  kind: "interview" | "follow_up" | "deadline" | "other";
+  title: string;
+  inDays: number; // negative = in the past
+  hour: number;
+  minutes?: number;
+  duration?: number;
+  location?: string;
+  notes?: string;
+  done?: boolean;
+};
+
+export const DEMO_EVENTS: DemoEvent[] = [
+  { company: "Deltaworks", kind: "interview", title: "Final round with the CTO", inDays: 1, hour: 14, duration: 60, location: "Deltaworks HQ, Rr. Garibaldi 4, Prishtina", notes: "Walk through the take-home task. Ask about the team and mentoring." },
+  { company: "Orbitly", kind: "interview", title: "Technical interview — React Native", inDays: 3, hour: 10, duration: 45, location: "https://meet.example.com/orbitly-rn", notes: "Review hooks, Expo Router and Supabase RLS." },
+  { company: "Brightloop", kind: "follow_up", title: "Follow up with Brightloop", inDays: -2, hour: 9, duration: 15, notes: "No reply in 10 days — send a short, friendly email." },
+  { company: "Lumen Apps", kind: "follow_up", title: "Follow up with Lumen Apps", inDays: 4, hour: 9, duration: 15 },
+  { company: "Pixelforge", kind: "deadline", title: "Reply to the Pixelforge offer", inDays: 5, hour: 17, duration: 15, notes: "Compare with Orbitly before answering." },
+  { company: "Northwind Labs", kind: "deadline", title: "Applications close — Northwind", inDays: 9, hour: 23, duration: 15 },
+  { company: "Orbitly", kind: "interview", title: "HR screening call", inDays: -6, hour: 11, duration: 30, location: "Phone", done: true },
+  { company: "Deltaworks", kind: "other", title: "Submit the take-home task", inDays: -4, hour: 18, duration: 60, done: true },
+];
+
+export const DEMO_CONTACTS = [
+  { company: "Orbitly", name: "Lena Gashi", role: "Technical Recruiter", email: "lena@orbitly.example", linkedin: "https://www.linkedin.com/in/example-lena" },
+  { company: "Orbitly", name: "Marko Shala", role: "Mobile Lead (interviewer)" },
+  { company: "Deltaworks", name: "Arben Kelmendi", role: "CTO", email: "arben@deltaworks.example" },
+  { company: "Pixelforge", name: "Drita Berisha", role: "People & Culture", email: "jobs@pixelforge.example", phone: "+383 44 123 456" },
+  { company: "Brightloop", name: "Visar Hoxha", role: "Engineering Manager", linkedin: "https://www.linkedin.com/in/example-visar" },
+];
+
+/** Stage history for a demo application, ending in its current status. */
+export function demoPath(status: Status, daysAgo: number, appliedDaysAgo?: number): { from: Status | null; to: Status; daysAgo: number }[] {
+  const path: { from: Status | null; to: Status; daysAgo: number }[] = [{ from: null, to: "saved", daysAgo }];
+  if (status === "saved" || appliedDaysAgo === undefined) return path;
+  path.push({ from: "saved", to: "applied", daysAgo: appliedDaysAgo });
+  if (status === "applied") return path;
+  if (status === "rejected") return [...path, { from: "applied", to: "rejected", daysAgo: Math.max(1, appliedDaysAgo - 9) }];
+  path.push({ from: "applied", to: "interview", daysAgo: Math.max(1, appliedDaysAgo - 7) });
+  if (status === "offer") path.push({ from: "interview", to: "offer", daysAgo: Math.max(0, appliedDaysAgo - 21) });
+  return path;
+}
