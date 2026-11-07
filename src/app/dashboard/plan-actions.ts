@@ -104,3 +104,18 @@ export async function deleteContact(id: string) {
   await supabase.from("contacts").delete().eq("id", id);
   refresh();
 }
+
+/** Weekly goal for the Insights page (1–50 applications a week). */
+export async function setWeeklyGoal(_prev: PlanState, formData: FormData): Promise<PlanState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sign in first." };
+  const goal = Number(formData.get("weekly_goal"));
+  if (!Number.isInteger(goal) || goal < 1 || goal > 50) return { error: "Pick a goal between 1 and 50 applications a week." };
+  const { error } = await supabase.from("profiles").upsert({ user_id: user.id, weekly_goal: goal });
+  if (error) return { error: "Couldn't save your goal — please try again." };
+  refresh();
+  return { ok: true };
+}

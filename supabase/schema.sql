@@ -235,3 +235,8 @@ $$;
 create trigger applications_track_status
   after insert or update of status on public.applications
   for each row execute function public.applications_track_status();
+
+-- ─── Phase 3: insights ──────────────────────────────────────────────────────
+-- How many applications the user wants to send each week.
+alter table public.profiles
+  add column weekly_goal integer not null default 5 check (weekly_goal between 1 and 50);

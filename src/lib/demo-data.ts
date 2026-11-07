@@ -77,6 +77,32 @@ Nice to have
 - Docker
 - AWS`;
 
+const QA_POST = `QA Automation Intern — Tessera (Mitrovica)
+
+Requirements
+- JavaScript or TypeScript
+- End-to-end testing with Playwright or Cypress
+- Unit tests with Jest
+- Git
+
+Nice to have
+- CI/CD with GitHub Actions
+- Docker
+- Python`;
+
+const LUMEN_POST = `Frontend Engineer — Lumen Apps (Remote)
+
+Requirements
+- React and TypeScript
+- Next.js
+- Unit testing with Jest and Testing Library
+- REST and GraphQL APIs
+
+Nice to have
+- Docker
+- CI/CD
+- AWS`;
+
 type DemoApp = {
   company: string;
   position: string;
@@ -95,8 +121,8 @@ export const DEMO_APPLICATIONS: DemoApp[] = [
   { company: "Aurora Health", position: "Web Developer Intern", status: "saved", location: "Remote", daysAgo: 2 },
   { company: "Brightloop", position: "Software Engineering Intern", status: "applied", location: "Prishtina", daysAgo: 12, appliedDaysAgo: 10, notes: "Applied through LinkedIn. Follow up next week." },
   { company: "Kodra Studio", position: "Junior .NET Developer", status: "applied", location: "Prishtina · Hybrid", job_description: DOTNET_POST, daysAgo: 9, appliedDaysAgo: 8 },
-  { company: "Tessera", position: "QA Automation Intern", status: "applied", location: "Mitrovica", daysAgo: 6, appliedDaysAgo: 5 },
-  { company: "Lumen Apps", position: "Frontend Engineer", status: "applied", location: "Remote", salary_range: "€900–1,200", daysAgo: 4, appliedDaysAgo: 3 },
+  { company: "Tessera", position: "QA Automation Intern", status: "applied", location: "Mitrovica", job_description: QA_POST, daysAgo: 6, appliedDaysAgo: 5 },
+  { company: "Lumen Apps", position: "Frontend Engineer", status: "applied", location: "Remote", salary_range: "€900–1,200", job_description: LUMEN_POST, daysAgo: 4, appliedDaysAgo: 3 },
   { company: "Orbitly", position: "React Native Developer", status: "interview", location: "Remote", salary_range: "€1,200–1,600", job_description: RN_POST, daysAgo: 20, appliedDaysAgo: 18, notes: "Technical interview on Thursday — review hooks, Expo Router and Supabase RLS." },
   { company: "Deltaworks", position: "Junior Backend Developer", status: "interview", location: "Prishtina", daysAgo: 25, appliedDaysAgo: 22, notes: "Take-home task submitted. Final round with the CTO." },
   { company: "Pixelforge", position: "Full-Stack Intern", status: "offer", location: "Prishtina", salary_range: "€700 / month", job_description: FULLSTACK_POST, daysAgo: 30, appliedDaysAgo: 28, notes: "Offer received — reply by Friday. 🎉" },

@@ -38,7 +38,7 @@ export async function startDemo(): Promise<DemoState> {
 
   const [{ data: inserted, error: appsError }] = await Promise.all([
     supabase.from("applications").insert(rows).select("id, company, job_description"),
-    supabase.from("profiles").upsert({ user_id: data.user.id, cv_text: DEMO_CV, updated_at: new Date().toISOString() }),
+    supabase.from("profiles").upsert({ user_id: data.user.id, cv_text: DEMO_CV, weekly_goal: 3, updated_at: new Date().toISOString() }),
   ]);
   if (appsError || !inserted) {
     console.error("demo seed failed", appsError?.message);

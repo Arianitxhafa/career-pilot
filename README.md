@@ -16,6 +16,8 @@ CareerPilot keeps every job application on one Kanban board — from the first s
 - **Interviews & follow-ups** — plan interviews (time, duration, meeting link or address), follow-ups and deadlines per application; one-click "follow up in a week"; overdue follow-ups turn red on the card
 - **Calendar** — month view with navigation, "Needs attention" and "Upcoming" lists, and a **This week** strip on the board
 - **.ics export** — add any event (or all upcoming ones) to Google Calendar, Apple Calendar or Outlook, with a reminder an hour before (RFC 5545 escaping and line folding, unit-tested)
+- **Insights** — a stage funnel with conversion rates, applications per week against your goal (hand-drawn SVG chart with tooltips and a screen-reader table), median time to hear back, interview rate, and the skills the jobs you're pursuing ask for most that your CV misses
+- **Weekly goal** — set how many applications to send a week, with a progress ring and a week streak
 - **People & history** — recruiters and interviewers per application (email, phone, LinkedIn), and a timeline of every stage change written by a Postgres trigger
 - **One-click demo** — an anonymous Supabase session gets a private board with 11 applications, a CV and co-pilot scores; a trigger in a private schema deletes demo accounts (and, by cascade, their data) after 24 hours
 
@@ -33,8 +35,8 @@ CareerPilot keeps every job application on one Kanban board — from the first s
   - **AI mode (Claude)**: switches on automatically when `ANTHROPIC_API_KEY` is set, and adds a deeper analysis and a tailored cover letter
 
 ### Coming next
-- Insights: funnel, weekly activity and a weekly goal
 - CV upload from PDF and match scores across all saved jobs
+- Import a job from a link, Albanian / English, installable app (PWA) and CSV export
 
 ## 🛠 Tech stack
 
@@ -53,6 +55,7 @@ CareerPilot keeps every job application on one Kanban board — from the first s
 - **Server Actions** (`src/app/dashboard/actions.ts`) handle create, update, move and delete — each one verifies the signed-in user and validates input.
 - **`src/proxy.ts`** (Next.js 16's replacement for middleware) refreshes the Supabase session and redirects signed-out visitors away from the dashboard.
 - **Co-pilot** uses the free matcher by default. With an API key, `src/lib/copilot.ts` calls Claude with a Zod schema as a structured output, so the response is always valid, typed JSON. The CV and job post are treated as untrusted data in the prompt, each user gets a daily analysis limit, and every result is stored in `ai_analyses` behind RLS.
+- **Insights maths is pure and unit-tested** (`src/lib/insights.ts`): the funnel counts every stage an application ever reached (from the history table), so a rejection after an interview still counts as an interview; weeks start on Monday in Kosovo time.
 - **Database rules live in the database** — `supabase/schema.sql` defines RLS policies, length checks and a trigger that keeps `updated_at` fresh and stamps `applied_at` the first time an application leaves "Saved".
 
 ## 🚀 Run locally
@@ -61,7 +64,7 @@ CareerPilot keeps every job application on one Kanban board — from the first s
 npm install
 cp .env.local.example .env.local   # add your Supabase URL, publishable key and Anthropic API key
 npm run dev
-npm test        # matcher unit tests (Node's built-in test runner)
+npm test        # unit tests: matcher, calendar/.ics and insights maths (Node's built-in test runner)
 ```
 
 1. Create a Supabase project and run `supabase/schema.sql` in the SQL editor.
