@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import type { AuthState } from "./actions";
+import { PasswordInput } from "@/components/PasswordInput";
 
 type Props = {
   mode: "login" | "signup";
@@ -28,18 +29,12 @@ export function AuthForm({ mode, action }: Props) {
         Email
         <input name="email" type="email" required autoComplete="email" placeholder="you@example.com" defaultValue={state?.email} className={inputClass} />
       </label>
-      <label className="grid gap-1.5 text-sm font-medium">
-        Password
-        <input
-          name="password"
-          type="password"
-          required
-          minLength={8}
-          autoComplete={isSignup ? "new-password" : "current-password"}
-          placeholder={isSignup ? "At least 8 characters" : "••••••••"}
-          className={inputClass}
-        />
-      </label>
+      <PasswordInput
+        label="Password"
+        autoComplete={isSignup ? "new-password" : "current-password"}
+        minLength={8}
+        placeholder={isSignup ? "At least 8 characters" : "••••••••"}
+      />
 
       {state?.error && (
         <p role="alert" className="rounded-xl bg-rose-500/10 px-3.5 py-2.5 text-sm text-rose-600 dark:text-rose-400">
