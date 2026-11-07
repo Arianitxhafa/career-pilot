@@ -9,8 +9,9 @@ import { primaryButton, secondaryButton } from "./ui";
 import { Plus, Search } from "lucide-react";
 import type { Analysis } from "@/app/dashboard/copilot-actions";
 import type { Contact, HistoryEntry } from "@/lib/applications";
-import { nextEventByApplication, whenLabel, EVENT_META, type AppEvent } from "@/lib/events";
+import { formatDate, nextEventByApplication, whenLabel, EVENT_META, type AppEvent } from "@/lib/events";
 import type { DialogTab } from "./ApplicationDialog";
+import { useLocale, useT } from "@/i18n/client";
 
 type Editing = { app?: Application; status: Status; tab?: DialogTab } | null;
 
@@ -49,6 +50,9 @@ export function Board({ applications, analyses, hasCv, aiEnabled, events, contac
   const nextEvent = useMemo(() => nextEventByApplication(events), [events]);
   const editingId = editing?.app?.id;
   const [seeding, startSeeding] = useTransition();
+  const dict = useT();
+  const t = dict.board;
+  const locale = useLocale();
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -62,7 +66,7 @@ export function Board({ applications, analyses, hasCv, aiEnabled, events, contac
     startTransition(async () => {
       moveOptimistic({ id, status });
       await moveApplication(id, status);
-      toast(status === "offer" ? `🎉 ${current.company} — offer landed!` : `${current.company} moved to ${STATUS_META[status].label}`);
+      toast(status === "offer" ? t.offerLanded(current.company) : t.moved(current.company, dict.status[status].label));
     });
   }
 
@@ -85,16 +89,16 @@ export function Board({ applications, analyses, hasCv, aiEnabled, events, contac
       <>
         <section className="animate-rise grid place-items-center rounded-3xl border border-dashed border-line bg-surface px-6 py-16 text-center shadow-card">
           <span className="grid size-14 place-items-center rounded-2xl bg-brand-soft text-2xl">🧭</span>
-          <h2 className="mt-4 font-display text-3xl font-bold tracking-tight">Your board is ready for take-off</h2>
+          <h2 className="mt-4 font-display text-3xl font-bold tracking-tight">{t.emptyTitle}</h2>
           <p className="mt-2 max-w-md text-sm text-muted">
-            Add every job you&apos;re interested in, then drag it across the board as you apply, interview and get offers.
+            {t.emptyText}
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <button onClick={() => setEditing({ status: "saved" })} className={primaryButton}>
-              <Plus className="size-4" /> Add your first application
+              <Plus className="size-4" /> {t.addFirst}
             </button>
             <button onClick={() => startSeeding(() => loadSampleData())} disabled={seeding} className={secondaryButton}>
-              {seeding ? "Loading…" : "Try with sample data"}
+              {seeding ? t.loading : t.sample}
             </button>
           </div>
         </section>
@@ -105,20 +109,20 @@ export function Board({ applications, analyses, hasCv, aiEnabled, events, contac
 
   return (
     <>
-    <section aria-label="Application board" className="flex flex-1 flex-col gap-4">
+    <section aria-label={t.label} className="flex flex-1 flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="relative w-full max-w-xs">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted" aria-hidden />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search company, role or city"
-            aria-label="Search applications"
+            placeholder={t.searchPlaceholder}
+            aria-label={t.searchLabel}
             className="w-full rounded-xl border border-line bg-surface py-2.5 pr-3 pl-9 text-sm shadow-card outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/15"
           />
         </div>
         <button onClick={() => setEditing({ status: "saved" })} className={`${primaryButton} group`}>
-          <Plus className="size-4 transition group-hover:rotate-90" /> New application
+          <Plus className="size-4 transition group-hover:rotate-90" /> {t.newApplication}
         </button>
       </div>
 
@@ -126,6 +130,7 @@ export function Board({ applications, analyses, hasCv, aiEnabled, events, contac
         {STATUSES.map((status) => {
           const items = visible.filter((a) => a.status === status);
           const meta = STATUS_META[status];
+          const label = dict.status[status];
           const isOver = overCol === status && dragId !== null;
           return (
             <div
@@ -149,12 +154,12 @@ export function Board({ applications, analyses, hasCv, aiEnabled, events, contac
               <div className="mb-3 flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
                   <span className={`size-2.5 rounded-full ${meta.dot}`} />
-                  <h2 className="font-mono text-xs font-bold tracking-[0.18em] uppercase">{meta.label}</h2>
+                  <h2 className="font-mono text-xs font-bold tracking-[0.18em] uppercase">{label.label}</h2>
                   <span className="rounded-full bg-surface px-2 py-0.5 font-mono text-xs font-medium tabular-nums text-muted">{items.length}</span>
                 </div>
                 <button
                   onClick={() => setEditing({ status })}
-                  aria-label={`Add to ${meta.label}`}
+                  aria-label={t.addTo(label.label)}
                   className="grid size-7 place-items-center rounded-lg text-muted transition hover:bg-surface hover:text-fg"
                 >
                   +
@@ -181,13 +186,13 @@ export function Board({ applications, analyses, hasCv, aiEnabled, events, contac
                       }`}
                     >
                       <span className={`absolute inset-y-0 left-0 w-1 ${meta.dot}`} aria-hidden />
-                      <button onClick={() => setEditing({ app, status: app.status })} aria-label={`Edit ${app.position} at ${app.company}`} className="block w-full text-left">
+                      <button onClick={() => setEditing({ app, status: app.status })} aria-label={t.edit(app.position, app.company)} className="block w-full text-left">
                         <div className="px-4 pt-3.5 pb-3">
                           <div className="flex items-center justify-between gap-2 font-mono text-[10px] tracking-[0.18em] text-muted">
                             <span>{flightCode(app)}</span>
                             {analyses[app.id] && (
                               <span
-                                title="Co-pilot match score"
+                                title={t.matchScore}
                                 className={`rounded-md px-1.5 py-0.5 text-[11px] font-bold tabular-nums tracking-normal ${
                                   analyses[app.id].score >= 75
                                     ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300"
@@ -204,7 +209,7 @@ export function Board({ applications, analyses, hasCv, aiEnabled, events, contac
                           <h3 className="font-display text-[17px] leading-snug font-bold">{app.position}</h3>
                           {nextEvent[app.id] && (() => {
                             const e = nextEvent[app.id];
-                            const w = whenLabel(e);
+                            const w = whenLabel(e, undefined, locale);
                             return (
                               <p
                                 className={`mt-2 inline-flex max-w-full items-center gap-1.5 truncate rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${
@@ -212,34 +217,34 @@ export function Board({ applications, analyses, hasCv, aiEnabled, events, contac
                                 }`}
                               >
                                 <span className={`size-1.5 shrink-0 rounded-full ${w.urgent ? "bg-rose-500" : EVENT_META[e.kind].dot}`} />
-                                {EVENT_META[e.kind].label} · {w.text}
+                                {dict.eventKind[e.kind]} · {w.text}
                               </p>
                             );
                           })()}
                         </div>
                         <div className="flex h-[46px] items-center gap-3 border-t border-dashed border-line px-4 font-mono text-[10px] text-muted">
                           <span className="min-w-0 truncate">
-                            <span className="block tracking-widest">GATE</span>
+                            <span className="block tracking-widest">{t.gate}</span>
                             <b className="text-fg">{app.location || "—"}</b>
                           </span>
                           {app.salary_range && (
                             <span className="min-w-0 truncate">
-                              <span className="block tracking-widest">PAY</span>
+                              <span className="block tracking-widest">{t.pay}</span>
                               <b className="text-fg">{app.salary_range}</b>
                             </span>
                           )}
                           <span className="ml-auto shrink-0 text-right">
-                            <span className="block tracking-widest">{app.applied_at ? "SENT" : "SAVED"}</span>
-                            <b className="text-fg">{new Date(app.applied_at ?? app.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" }).toUpperCase()}</b>
+                            <span className="block tracking-widest">{app.applied_at ? t.sent : t.saved}</span>
+                            <b className="text-fg">{formatDate(new Date(app.applied_at ?? app.created_at), locale).toUpperCase()}</b>
                           </span>
                         </div>
                       </button>
                       <label className="flex items-center gap-2 border-t border-line px-4 py-2 text-xs text-muted lg:hidden">
-                        Move to
+                        {t.moveTo}
                         <select value={app.status} onChange={(e) => move(app.id, e.target.value as Status)} className="flex-1 rounded-md border border-line bg-surface px-1.5 py-1 text-fg">
                           {STATUSES.map((s) => (
                             <option key={s} value={s}>
-                              {STATUS_META[s].label}
+                              {dict.status[s].label}
                             </option>
                           ))}
                         </select>
@@ -249,7 +254,7 @@ export function Board({ applications, analyses, hasCv, aiEnabled, events, contac
                 ))}
                 {items.length === 0 && (
                   <li className="grid flex-1 place-items-center rounded-xl border border-dashed border-line px-3 py-6 text-center text-xs text-muted">
-                    {query ? "No matches" : meta.hint}
+                    {query ? t.noMatches : label.hint}
                   </li>
                 )}
               </ul>

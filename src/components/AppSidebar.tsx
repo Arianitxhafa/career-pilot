@@ -6,14 +6,16 @@ import { useState } from "react";
 import { BarChart3, CalendarDays, FileUser, KanbanSquare, LogOut, Menu, X, type LucideIcon } from "lucide-react";
 import { Logo } from "./Logo";
 import { signOut } from "@/app/(auth)/actions";
+import { Preferences } from "./Preferences";
+import { useT } from "@/i18n/client";
 
-type NavItem = { href: string; label: string; icon: LucideIcon; ready: boolean; code: string };
+type NavItem = { href: string; key: "board" | "cv" | "calendar" | "insights"; icon: LucideIcon; ready: boolean; code: string };
 
 const NAV: NavItem[] = [
-  { href: "/dashboard", label: "Board", icon: KanbanSquare, ready: true, code: "BRD" },
-  { href: "/dashboard/cv", label: "CV & co-pilot", icon: FileUser, ready: true, code: "CVC" },
-  { href: "/dashboard/calendar", label: "Calendar", icon: CalendarDays, ready: true, code: "CAL" },
-  { href: "/dashboard/insights", label: "Insights", icon: BarChart3, ready: true, code: "INS" },
+  { href: "/dashboard", key: "board", icon: KanbanSquare, ready: true, code: "BRD" },
+  { href: "/dashboard/cv", key: "cv", icon: FileUser, ready: true, code: "CVC" },
+  { href: "/dashboard/calendar", key: "calendar", icon: CalendarDays, ready: true, code: "CAL" },
+  { href: "/dashboard/insights", key: "insights", icon: BarChart3, ready: true, code: "INS" },
 ];
 
 const isActive = (pathname: string, href: string) => (href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href));
@@ -21,6 +23,7 @@ const isActive = (pathname: string, href: string) => (href === "/dashboard" ? pa
 export function AppSidebar({ name, email, isDemo, stats }: { name: string; email: string; isDemo: boolean; stats: { active: number; interviews: number } }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const t = useT().nav;
   const initials =
     name
       .split(/\s+/)
@@ -34,7 +37,7 @@ export function AppSidebar({ name, email, isDemo, stats }: { name: string; email
     <div className="flex h-full flex-col gap-5 p-4" onClick={(e) => (e.target as HTMLElement).closest("a") && setOpen(false)}>
       <div className="flex items-center justify-between">
         <Logo href="/dashboard" />
-        <button onClick={() => setOpen(false)} className="rounded-lg p-1.5 text-muted hover:bg-surface md:hidden" aria-label="Close menu">
+        <button onClick={() => setOpen(false)} className="rounded-lg p-1.5 text-muted hover:bg-surface md:hidden" aria-label={t.closeMenu}>
           <X className="size-5" />
         </button>
       </div>
@@ -42,26 +45,27 @@ export function AppSidebar({ name, email, isDemo, stats }: { name: string; email
       {/* Flight status card */}
       <div className="overflow-hidden rounded-2xl bg-board p-4 text-[#e8ecf6] shadow-card">
         <p className="flex items-center justify-between font-mono text-[10px] tracking-[0.22em] text-white/50">
-          <span>FLIGHT STATUS</span>
+          <span>{t.flightStatus}</span>
           <span className="flex items-center gap-1.5 text-emerald-300">
-            <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" /> LIVE
+            <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" /> {t.live}
           </span>
         </p>
         <div className="mt-3 grid grid-cols-2 gap-3 font-mono">
           <div>
             <p className="text-2xl font-bold tabular-nums">{stats.active}</p>
-            <p className="text-[10px] tracking-wider text-white/50">IN THE AIR</p>
+            <p className="text-[10px] tracking-wider text-white/50">{t.inTheAir}</p>
           </div>
           <div>
             <p className="text-2xl font-bold tabular-nums text-board-ink">{stats.interviews}</p>
-            <p className="text-[10px] tracking-wider text-white/50">INTERVIEWS</p>
+            <p className="text-[10px] tracking-wider text-white/50">{t.interviews}</p>
           </div>
         </div>
       </div>
 
-      <nav aria-label="Main" className="grid gap-0.5">
-        {NAV.map(({ href, label, icon: Icon, ready, code }) => {
+      <nav aria-label={t.main} className="grid gap-0.5">
+        {NAV.map(({ href, key, icon: Icon, ready, code }) => {
           const active = isActive(pathname, href);
+          const label = t[key];
           return ready ? (
             <Link
               key={href}
@@ -86,14 +90,16 @@ export function AppSidebar({ name, email, isDemo, stats }: { name: string; email
         })}
       </nav>
 
-      <div className="mt-auto flex items-center gap-3 rounded-2xl border border-line bg-surface p-2.5">
+      <Preferences className="mt-auto" />
+
+      <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-2.5">
         <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-soft text-xs font-bold text-brand">{initials}</span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold">{name}</p>
-          <p className="truncate text-xs text-muted">{isDemo ? "Demo session" : email}</p>
+          <p className="truncate text-xs text-muted">{isDemo ? t.demoSession : email}</p>
         </div>
         <form action={signOut}>
-          <button className="rounded-lg p-2 text-muted transition hover:bg-surface-2 hover:text-rose-500" aria-label="Sign out" title="Sign out">
+          <button className="rounded-lg p-2 text-muted transition hover:bg-surface-2 hover:text-rose-500" aria-label={t.signOut} title={t.signOut}>
             <LogOut className="size-4" />
           </button>
         </form>
@@ -105,13 +111,13 @@ export function AppSidebar({ name, email, isDemo, stats }: { name: string; email
     <>
       <div className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-bg/85 px-4 py-3 backdrop-blur md:hidden">
         <Logo href="/dashboard" />
-        <button onClick={() => setOpen(true)} className="rounded-lg p-2 hover:bg-surface" aria-label="Open menu" aria-expanded={open}>
+        <button onClick={() => setOpen(true)} className="rounded-lg p-2 hover:bg-surface" aria-label={t.openMenu} aria-expanded={open}>
           <Menu className="size-5" />
         </button>
       </div>
       {open && (
         <div className="fixed inset-0 z-40 md:hidden">
-          <button className="absolute inset-0 animate-fade bg-black/50" onClick={() => setOpen(false)} aria-label="Close menu" />
+          <button className="absolute inset-0 animate-fade bg-black/50" onClick={() => setOpen(false)} aria-label={t.closeMenu} />
           <aside className="absolute inset-y-0 left-0 w-72 animate-[rise_0.3s_ease_both] bg-surface-2 shadow-2xl">{body}</aside>
         </div>
       )}

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useLocale, useT } from "@/i18n/client";
+import { formatDate } from "@/lib/events";
 
 type Point = { week: string; count: number };
 
@@ -8,11 +10,13 @@ const H = 220;
 const PAD = { top: 14, right: 8, bottom: 28, left: 30 };
 const GAP = 2; // surface gap between adjacent bars
 
-const label = (week: string) => new Date(`${week}T12:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 
 /** Applications sent per week: thin bars with rounded tops, hover tooltip and a table for screen readers. */
 export function WeeklyChart({ data, goal }: { data: Point[]; goal: number }) {
   const [active, setActive] = useState<number | null>(null);
+  const t = useT().insights.chart;
+  const locale = useLocale();
+  const label = (week: string) => formatDate(new Date(`${week}T12:00:00Z`), locale, { day: true, month: "short" }, "UTC");
   // Draw at the real width so text stays 11px on phones instead of shrinking with the SVG.
   const ref = useRef<HTMLElement>(null);
   const [W, setW] = useState(640);
@@ -36,7 +40,7 @@ export function WeeklyChart({ data, goal }: { data: Point[]; goal: number }) {
 
   return (
     <figure ref={ref} className="relative m-0">
-      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={`Applications sent per week for the last ${data.length} weeks`} onMouseLeave={() => setActive(null)}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={t.label(data.length)} onMouseLeave={() => setActive(null)}>
         {[0, top / 2, top].map((t) => (
           <g key={t}>
             <line x1={PAD.left} x2={W - PAD.right} y1={y(t)} y2={y(t)} stroke="var(--line)" strokeWidth="1" />
@@ -48,7 +52,7 @@ export function WeeklyChart({ data, goal }: { data: Point[]; goal: number }) {
         {/* Weekly goal as a dashed reference line */}
         <line x1={PAD.left} x2={W - PAD.right} y1={y(goal)} y2={y(goal)} stroke="var(--amber)" strokeWidth="1.5" strokeDasharray="5 5" />
         <text x={W - PAD.right} y={y(goal) - 5} textAnchor="end" fontSize="11" fill="var(--amber)" className="font-mono font-bold">
-          GOAL {goal}
+          {t.goal} {goal}
         </text>
         {data.map((d, i) => {
           const x = PAD.left + i * slot + (slot - barW) / 2;
@@ -58,7 +62,7 @@ export function WeeklyChart({ data, goal }: { data: Point[]; goal: number }) {
           return (
             <g key={d.week}>
               {/* Hit target bigger than the bar */}
-              <rect x={PAD.left + i * slot} y={PAD.top} width={slot} height={plotH} fill="transparent" onMouseEnter={() => setActive(i)} onFocus={() => setActive(i)} tabIndex={0} aria-label={`Week of ${label(d.week)}: ${d.count} applications`} />
+              <rect x={PAD.left + i * slot} y={PAD.top} width={slot} height={plotH} fill="transparent" onMouseEnter={() => setActive(i)} onFocus={() => setActive(i)} tabIndex={0} aria-label={t.bar(label(d.week), d.count)} />
               {h > 0 && (
                 <path
                   d={`M${x},${y(0)} V${y(d.count) + r} Q${x},${y(d.count)} ${x + r},${y(d.count)} H${x + barW - r} Q${x + barW},${y(d.count)} ${x + barW},${y(d.count) + r} V${y(0)} Z`}
@@ -70,7 +74,7 @@ export function WeeklyChart({ data, goal }: { data: Point[]; goal: number }) {
               )}
               {(data.length - 1 - i) % every === 0 && (
                 <text x={x + barW / 2} y={H - 8} textAnchor="middle" fontSize="11" fill={isLast ? "var(--fg)" : "var(--muted)"} fontWeight={isLast ? 700 : 400}>
-                  {isLast ? "This wk" : label(d.week)}
+                  {isLast ? t.thisWeek : label(d.week)}
                 </text>
               )}
             </g>
@@ -82,19 +86,19 @@ export function WeeklyChart({ data, goal }: { data: Point[]; goal: number }) {
           className="pointer-events-none absolute -translate-x-1/2 -translate-y-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-xs shadow-card"
           style={{ left: `${((PAD.left + (active! + 0.5) * slot) / W) * 100}%`, top: `${(y(point.count) / H) * 100}%` }}
         >
-          <p className="font-semibold">Week of {label(point.week)}</p>
+          <p className="font-semibold">{t.weekOf(label(point.week))}</p>
           <p className="text-muted">
-            {point.count} application{point.count === 1 ? "" : "s"} sent
+            {t.sent(point.count)}
           </p>
         </div>
       )}
-      {empty && <p className="absolute inset-0 grid place-items-center text-sm text-muted">No applications sent in the last {data.length} weeks yet.</p>}
+      {empty && <p className="absolute inset-0 grid place-items-center text-sm text-muted">{t.empty(data.length)}</p>}
       <table className="sr-only">
-        <caption>Applications sent per week</caption>
+        <caption>{t.caption}</caption>
         <thead>
           <tr>
-            <th>Week of</th>
-            <th>Applications</th>
+            <th>{t.weekCol}</th>
+            <th>{t.appsCol}</th>
           </tr>
         </thead>
         <tbody>

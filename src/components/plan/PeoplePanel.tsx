@@ -6,6 +6,7 @@ import type { Application, Contact } from "@/lib/applications";
 import { deleteContact, saveContact } from "@/app/dashboard/plan-actions";
 import { toast } from "@/components/Toaster";
 import { inputClass, primaryButton } from "@/components/ui";
+import { useT } from "@/i18n/client";
 
 const initials = (name: string) =>
   name
@@ -21,12 +22,13 @@ export function PeoplePanel({ app, contacts }: { app: Application; contacts: Con
   const [, startSave] = useTransition();
   const [busy, startBusy] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
+  const t = useT().people;
 
   useEffect(() => {
     if (!state?.ok) return;
-    toast("Contact saved");
+    toast(t.saved);
     formRef.current?.reset();
-  }, [state]);
+  }, [state, t]);
 
   return (
     <div className="grid gap-5">
@@ -64,10 +66,10 @@ export function PeoplePanel({ app, contacts }: { app: Application; contacts: Con
                 disabled={busy}
                 onClick={() => startBusy(async () => {
                   await deleteContact(c.id);
-                  toast(`${c.name} removed`);
+                  toast(t.removed(c.name));
                 })}
                 className="rounded-lg p-1.5 text-muted transition hover:bg-rose-500/10 hover:text-rose-600"
-                aria-label={`Delete ${c.name}`}
+                aria-label={t.deleteItem(c.name)}
               >
                 <Trash2 className="size-4" />
               </button>
@@ -75,7 +77,7 @@ export function PeoplePanel({ app, contacts }: { app: Application; contacts: Con
           ))}
         </ul>
       ) : (
-        <p className="rounded-xl border border-dashed border-line px-4 py-5 text-center text-sm text-muted">Keep the recruiter, your interviewers and any referral here, so a follow-up is one click away.</p>
+        <p className="rounded-xl border border-dashed border-line px-4 py-5 text-center text-sm text-muted">{t.empty}</p>
       )}
 
       <form
@@ -89,15 +91,15 @@ export function PeoplePanel({ app, contacts }: { app: Application; contacts: Con
       >
         <input type="hidden" name="application_id" value={app.id} />
         <p className="flex items-center gap-2 text-sm font-semibold">
-          <UserPlus className="size-4 text-brand" /> Add a person
+          <UserPlus className="size-4 text-brand" /> {t.addHeading}
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <input name="name" required maxLength={120} placeholder="Name *" aria-label="Name" className={inputClass} />
-          <input name="role" maxLength={120} placeholder="Role, e.g. Recruiter" aria-label="Role" className={inputClass} />
-          <input name="email" type="email" maxLength={200} placeholder="Email" aria-label="Email" className={inputClass} />
-          <input name="phone" maxLength={40} placeholder="Phone" aria-label="Phone" className={inputClass} />
+          <input name="name" required maxLength={120} placeholder={t.namePh} aria-label={t.name} className={inputClass} />
+          <input name="role" maxLength={120} placeholder={t.rolePh} aria-label={t.role} className={inputClass} />
+          <input name="email" type="email" maxLength={200} placeholder={t.email} aria-label={t.email} className={inputClass} />
+          <input name="phone" maxLength={40} placeholder={t.phone} aria-label={t.phone} className={inputClass} />
         </div>
-        <input name="linkedin" maxLength={300} placeholder="LinkedIn profile link" aria-label="LinkedIn" className={inputClass} />
+        <input name="linkedin" maxLength={300} placeholder={t.linkedinPh} aria-label="LinkedIn" className={inputClass} />
         {state?.error && (
           <p role="alert" className="rounded-lg bg-rose-500/10 px-3 py-2 text-sm text-rose-600 dark:text-rose-400">
             {state.error}
@@ -105,7 +107,7 @@ export function PeoplePanel({ app, contacts }: { app: Application; contacts: Con
         )}
         <div className="flex justify-end">
           <button type="submit" disabled={pending} className={primaryButton}>
-            {pending ? "Saving…" : "Save contact"}
+            {pending ? t.saving : t.submit}
           </button>
         </div>
       </form>

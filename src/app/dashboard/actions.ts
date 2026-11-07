@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { isStatus, type Status } from "@/lib/applications";
+import { getT } from "@/i18n/server";
 
 export type SaveState = { ok?: boolean; error?: string } | undefined;
 
@@ -28,15 +29,16 @@ export async function saveApplication(_prev: SaveState, formData: FormData): Pro
   const position = text(formData, "position", 120);
   const status = formData.get("status");
   let jobUrl = text(formData, "job_url", 500);
+  const t = (await getT()).forms;
 
-  if (!company || !position) return { error: "Company and position are required." };
-  if (!isStatus(status)) return { error: "Pick a valid stage." };
+  if (!company || !position) return { error: t.required };
+  if (!isStatus(status)) return { error: t.stage };
   if (jobUrl) {
     if (!/^https?:\/\//i.test(jobUrl)) jobUrl = `https://${jobUrl}`;
     try {
       new URL(jobUrl);
     } catch {
-      return { error: "The job link doesn't look like a valid URL." };
+      return { error: t.url };
     }
   }
 
@@ -53,7 +55,7 @@ export async function saveApplication(_prev: SaveState, formData: FormData): Pro
   const { error } = id
     ? await supabase.from("applications").update(row).eq("id", id)
     : await supabase.from("applications").insert(row);
-  if (error) return { error: "Couldn't save — please try again." };
+  if (error) return { error: t.save };
 
   revalidatePath("/dashboard");
   return { ok: true };

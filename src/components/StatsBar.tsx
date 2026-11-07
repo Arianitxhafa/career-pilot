@@ -1,22 +1,23 @@
 import { Gauge, PlaneLanding, PlaneTakeoff, Send, Trophy, type LucideIcon } from "lucide-react";
 import type { computeStats } from "@/lib/applications";
 import { CountUp } from "./CountUp";
+import type { Dict } from "@/i18n/messages";
 
 type Stats = ReturnType<typeof computeStats>;
 
 /** The instrument panel: five readouts, the response rate as a dial. */
-export function StatsBar({ stats }: { stats: Stats }) {
+export function StatsBar({ stats, t }: { stats: Stats; t: Dict["stats"] }) {
   const tiles: { label: string; value: number; hint: string; icon: LucideIcon; tone?: "brand" }[] = [
-    { label: "Tracked", value: stats.total, hint: "jobs on your board", icon: PlaneTakeoff },
-    { label: "Sent", value: stats.sent, hint: "applications submitted", icon: Send },
-    { label: "Interviews", value: stats.interviews, hint: "reached interview stage", icon: PlaneLanding },
-    { label: "Offers", value: stats.offers, hint: "offers received", icon: Trophy, tone: "brand" },
+    { label: t.tracked, value: stats.total, hint: t.trackedHint, icon: PlaneTakeoff },
+    { label: t.sent, value: stats.sent, hint: t.sentHint, icon: Send },
+    { label: t.interviews, value: stats.interviews, hint: t.interviewsHint, icon: PlaneLanding },
+    { label: t.offers, value: stats.offers, hint: t.offersHint, icon: Trophy, tone: "brand" },
   ];
   const r = 26;
   const circumference = 2 * Math.PI * r;
 
   return (
-    <section aria-label="Your stats" className="stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+    <section aria-label={t.label} className="stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
       {tiles.slice(0, 2).map((t) => (
         <Tile key={t.label} {...t} />
       ))}
@@ -38,12 +39,12 @@ export function StatsBar({ stats }: { stats: Stats }) {
         </svg>
         <div>
           <p className="flex items-center gap-1.5 font-mono text-[10px] font-bold tracking-[0.18em] text-muted uppercase">
-            <Gauge className="size-3.5" aria-hidden /> Response
+            <Gauge className="size-3.5" aria-hidden /> {t.response}
           </p>
           <p className="mt-1 font-display text-3xl leading-none font-bold">
             <CountUp value={stats.responseRate} suffix="%" />
           </p>
-          <p className="mt-1 text-xs text-muted">of sent answered</p>
+          <p className="mt-1 text-xs text-muted">{t.responseHint}</p>
         </div>
       </div>
       {tiles.slice(2).map((t) => (

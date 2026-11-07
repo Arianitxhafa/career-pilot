@@ -7,6 +7,9 @@ import {
   analyzeApplication,
   type Analysis,
 } from "@/app/dashboard/copilot-actions";
+import { useLocale, useT } from "@/i18n/client";
+import { formatDate } from "@/lib/events";
+import type { Dict } from "@/i18n/messages";
 
 type Props = {
   app: Application;
@@ -15,10 +18,10 @@ type Props = {
   aiEnabled: boolean;
 };
 
-function scoreTone(score: number) {
-  if (score >= 75) return { color: "#10b981", label: "Strong match" };
-  if (score >= 50) return { color: "#f59e0b", label: "Worth applying" };
-  return { color: "#f43f5e", label: "Big gaps" };
+function scoreTone(score: number, t: Dict["copilot"]) {
+  if (score >= 75) return { color: "#10b981", label: t.strong };
+  if (score >= 50) return { color: "#f59e0b", label: t.worth };
+  return { color: "#f43f5e", label: t.gaps };
 }
 
 export function CopilotPanel({ app, initial, hasCv, aiEnabled }: Props) {
@@ -29,21 +32,21 @@ export function CopilotPanel({ app, initial, hasCv, aiEnabled }: Props) {
   const [, startAnalyze] = useTransition();
   const [copied, setCopied] = useState(false);
   const analysis = state?.analysis ?? initial;
+  const t = useT().copilot;
 
   if (!hasCv) {
     return (
       <div className="grid place-items-center gap-3 rounded-2xl border border-dashed border-line px-6 py-10 text-center">
         <span className="text-3xl">📄</span>
-        <p className="font-semibold">Add your CV to unlock the co-pilot</p>
+        <p className="font-semibold">{t.noCvTitle}</p>
         <p className="max-w-sm text-sm text-muted">
-          The co-pilot compares your CV with this job post, scores the match and
-          shows which skills you already have and which are missing.
+          {t.noCvText}
         </p>
         <Link
           href="/dashboard/cv"
           className="mt-1 rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-brand-ink shadow-lg shadow-brand/25 hover:brightness-110"
         >
-          Add my CV
+          {t.addCv}
         </Link>
       </div>
     );
@@ -61,23 +64,19 @@ export function CopilotPanel({ app, initial, hasCv, aiEnabled }: Props) {
       >
         <input type="hidden" name="application_id" value={app.id} />
         <label className="grid gap-1.5 text-sm font-medium">
-          Job post
+          {t.jobPost}
           <textarea
             name="job_description"
             defaultValue={app.job_description ?? ""}
             rows={6}
             maxLength={20000}
-            placeholder="Paste the full job description here — responsibilities, requirements, nice-to-haves…"
+            placeholder={t.jobPostPh}
             className="w-full resize-y rounded-xl border border-line bg-surface px-3 py-2 text-sm text-fg outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-4 focus:ring-brand/15"
           />
         </label>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs text-muted">
-            {!aiEnabled
-              ? "Free keyword match · runs instantly"
-              : typeof state?.remaining === "number"
-                ? `${state.remaining} AI analyses left today`
-                : "Powered by Claude · a few analyses per day"}
+            {!aiEnabled ? t.free : typeof state?.remaining === "number" ? t.left(state.remaining) : t.powered}
           </p>
           <button
             type="submit"
@@ -87,12 +86,12 @@ export function CopilotPanel({ app, initial, hasCv, aiEnabled }: Props) {
             {pending ? (
               <>
                 <span className="size-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />{" "}
-                Analysing…{aiEnabled ? " (~20s)" : ""}
+                {t.analysing}{aiEnabled ? " (~20s)" : ""}
               </>
             ) : analysis ? (
-              "✨ Analyse again"
+              t.again
             ) : (
-              "✨ Analyse my match"
+              t.analyse
             )}
           </button>
         </div>
@@ -134,11 +133,13 @@ function AnalysisView({
   onCopy: () => void;
 }) {
   const { result } = analysis;
-  const tone = scoreTone(analysis.score);
+  const t = useT().copilot;
+  const locale = useLocale();
+  const tone = scoreTone(analysis.score, t);
   const isAi = result.mode !== "basic";
 
   return (
-    <section aria-label="Co-pilot analysis" className="grid gap-4 animate-rise">
+    <section aria-label={t.section} className="grid gap-4 animate-rise">
       <div className="flex items-center gap-4 rounded-2xl border border-line bg-surface-2/60 p-4">
         <div
           className="grid size-20 shrink-0 place-items-center rounded-full"
@@ -146,7 +147,7 @@ function AnalysisView({
             background: `conic-gradient(${tone.color} ${analysis.score * 3.6}deg, var(--line) 0deg)`,
           }}
           role="img"
-          aria-label={`Match score ${analysis.score} out of 100`}
+          aria-label={t.scoreLabel(analysis.score)}
         >
           <div className="grid size-16 place-items-center rounded-full bg-surface">
             <span className="text-2xl font-bold tabular-nums">
@@ -161,7 +162,7 @@ function AnalysisView({
           >
             {tone.label}
             <span className="rounded-md bg-surface px-1.5 py-0.5 text-[11px] font-medium text-muted">
-              {isAi ? "AI analysis" : "Keyword match"}
+              {isAi ? t.ai : t.keyword}
             </span>
           </p>
           <p className="mt-0.5 text-sm">{result.verdict}</p>
@@ -171,7 +172,7 @@ function AnalysisView({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <h3 className="text-xs font-semibold tracking-wider text-muted uppercase">
-            You already show
+            {t.youShow}
           </h3>
           <ul className="mt-2 grid gap-1.5 text-sm">
             {result.strengths.map((s) => (
@@ -184,7 +185,7 @@ function AnalysisView({
         </div>
         <div>
           <h3 className="text-xs font-semibold tracking-wider text-muted uppercase">
-            Missing keywords
+            {t.missing}
           </h3>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {result.missing_keywords.length ? (
@@ -197,7 +198,7 @@ function AnalysisView({
                 </span>
               ))
             ) : (
-              <span className="text-sm text-muted">None — nice!</span>
+              <span className="text-sm text-muted">{t.none}</span>
             )}
           </div>
         </div>
@@ -205,7 +206,7 @@ function AnalysisView({
 
       <div>
         <h3 className="text-xs font-semibold tracking-wider text-muted uppercase">
-          Tailor your CV
+          {t.tailor}
         </h3>
         <ol className="mt-2 grid list-decimal gap-1.5 pl-5 text-sm">
           {result.suggestions.map((s) => (
@@ -218,14 +219,14 @@ function AnalysisView({
         <div>
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-semibold tracking-wider text-muted uppercase">
-              Cover letter draft
+              {t.letter}
             </h3>
             <button
               type="button"
               onClick={onCopy}
               className="rounded-lg px-2 py-1 text-xs font-semibold text-brand hover:bg-brand-soft"
             >
-              {copied ? "✓ Copied" : "Copy"}
+              {copied ? t.copied : t.copy}
             </button>
           </div>
           <p className="mt-2 max-h-64 overflow-y-auto rounded-xl border border-line bg-surface-2/50 p-3 text-sm leading-relaxed whitespace-pre-wrap">
@@ -234,22 +235,14 @@ function AnalysisView({
         </div>
       ) : (
         <p className="rounded-xl border border-dashed border-line px-3.5 py-2.5 text-xs text-muted">
-          ✨ AI analysis — with a tailored cover letter written by Claude — is
-          coming to this demo. The keyword match above runs for free.
+          {t.aiSoon}
         </p>
       )}
 
       <p className="text-xs text-muted">
-        Generated{" "}
-        {new Date(analysis.created_at).toLocaleString("en-GB", {
-          day: "numeric",
-          month: "short",
-          hour: "2-digit",
-          minute: "2-digit",
-        })}
-        {isAi
-          ? " by Claude. Always review before sending."
-          : " by keyword matching — a quick guide, not a verdict."}
+        {t.generated}{" "}
+        {formatDate(new Date(analysis.created_at), locale, { day: true, month: "short", time: true })}
+        {isAi ? t.byClaude : t.byKeywords}
       </p>
     </section>
   );

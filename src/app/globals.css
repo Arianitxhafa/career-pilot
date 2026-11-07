@@ -7,6 +7,7 @@
 --------------------------------------------------------------------------- */
 
 :root {
+  color-scheme: light;
   --bg: #f2f5fb;
   --surface: #ffffff;
   --surface-2: #e8edf7;
@@ -25,8 +26,30 @@
   --shadow: 0 1px 0 rgb(255 255 255 / 0.6) inset, 0 12px 32px -18px rgb(10 16 34 / 0.35);
 }
 
+/* Dark tokens: chosen explicitly (data-theme="dark") or following the system when no choice is saved. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #050913;
+  --surface: #0b1121;
+  --surface-2: #121a2e;
+  --fg: #eef2fb;
+  --muted: #8994ab;
+  --line: #1b2540;
+  --brand: #6c8dff;
+  --brand-ink: #050913;
+  --brand-soft: #141f45;
+  --chart: #6286fa; /* validated for the dark surface */
+  --amber: #ffb547;
+  --amber-soft: #2a1f0b;
+  --board: #03060d;
+  --board-ink: #ffc85c;
+  --grid: rgb(108 141 255 / 0.07);
+  --shadow: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 16px 40px -20px rgb(0 0 0 / 0.8);
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --bg: #050913;
     --surface: #0b1121;
     --surface-2: #121a2e;
@@ -43,6 +66,18 @@
     --board-ink: #ffc85c;
     --grid: rgb(108 141 255 / 0.07);
     --shadow: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 16px 40px -20px rgb(0 0 0 / 0.8);
+  }
+}
+
+/* Tailwind `dark:` follows the same rule. */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
   }
 }
 

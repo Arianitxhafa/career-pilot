@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildIcs, dayKey, icsEscape, icsFold, monthGrid, nextEventByApplication, parseMonth, shiftMonth, whenLabel, type AppEvent } from "./events.ts";
+import { buildIcs, dayKey, formatDate, icsEscape, icsFold, monthGrid, nextEventByApplication, parseMonth, shiftMonth, whenLabel, type AppEvent } from "./events.ts";
 
 const now = new Date("2026-11-07T10:00:00Z"); // 11:00 in Kosovo, Saturday
 
@@ -65,4 +65,16 @@ test("ics file", () => {
   assert.match(ics, /SUMMARY:Interview — Orbitly\\, React Native/);
   assert.match(ics, /TRIGGER:-PT1H/);
   assert.match(ics, /END:VCALENDAR\r\n$/);
+});
+
+test("dates and when labels in Albanian, built without locale data", () => {
+  const d = new Date("2026-11-07T13:30:00Z"); // Saturday 14:30 in Prishtina
+  assert.equal(formatDate(d, "en", { weekday: true, day: true, month: "short" }), "Sat 7 Nov");
+  assert.equal(formatDate(d, "sq", { weekday: true, day: true, month: "short" }), "Sht 7 nën");
+  assert.equal(formatDate(d, "sq", { month: "long", year: true }), "nëntor 2026");
+  assert.equal(formatDate(d, "sq", { day: true, month: "short", time: true }), "7 nën, 14:30");
+  const e = (iso: string, kind: AppEvent["kind"] = "interview") => ({ starts_at: iso, kind, done: false });
+  assert.equal(whenLabel(e("2026-11-08T09:00:00Z"), now, "sq").text, "Nesër 10:00");
+  assert.equal(whenLabel(e("2026-11-10T09:00:00Z"), now, "sq").text, "Mar 10:00");
+  assert.equal(whenLabel(e("2026-11-05T09:00:00Z", "follow_up"), now, "sq").text, "2 ditë vonesë");
 });

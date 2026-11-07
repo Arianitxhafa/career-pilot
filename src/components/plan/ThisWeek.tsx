@@ -2,9 +2,12 @@ import Link from "next/link";
 import { CalendarDays, CloudSun } from "lucide-react";
 import type { Application } from "@/lib/applications";
 import { EVENT_META, whenLabel, type AppEvent } from "@/lib/events";
+import type { Dict } from "@/i18n/messages";
+import type { Locale } from "@/i18n/config";
 
 /** Overdue follow-ups and everything in the next 7 days — what needs your attention now. */
-export function ThisWeek({ events, applications }: { events: AppEvent[]; applications: Application[] }) {
+export function ThisWeek({ events, applications, dict, locale }: { events: AppEvent[]; applications: Application[]; dict: Dict; locale: Locale }) {
+  const t = dict.thisWeek;
   const now = new Date();
   const week = now.getTime() + 7 * 86_400_000;
   const company = new Map(applications.map((a) => [a.id, a.company]));
@@ -21,20 +24,20 @@ export function ThisWeek({ events, applications }: { events: AppEvent[]; applica
     <section aria-labelledby="this-week" className="animate-rise rounded-2xl border border-line bg-surface p-4 shadow-card [animation-delay:120ms]">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 id="this-week" className="flex items-center gap-2 font-mono text-xs font-bold tracking-[0.18em] uppercase">
-          <CalendarDays className="size-4 text-brand" aria-hidden /> This week
+          <CalendarDays className="size-4 text-brand" aria-hidden /> {t.title}
         </h2>
         <Link href="/dashboard/calendar" className="text-xs font-semibold text-brand hover:underline">
-          Open calendar →
+          {t.openCalendar}
         </Link>
       </div>
       {items.length === 0 ? (
         <p className="flex items-center gap-2 text-sm text-muted">
-          <CloudSun className="size-4 text-amber" aria-hidden /> Clear skies — nothing scheduled this week. Open any card → <b className="font-semibold">Plan</b> to add an interview or a follow-up.
+          <CloudSun className="size-4 text-amber" aria-hidden /> {t.emptyA} <b className="font-semibold">{t.emptyPlan}</b> {t.emptyB}
         </p>
       ) : (
         <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((e) => {
-            const w = whenLabel(e, now);
+            const w = whenLabel(e, now, locale);
             return (
               <li key={e.id}>
                 <Link
@@ -45,7 +48,7 @@ export function ThisWeek({ events, applications }: { events: AppEvent[]; applica
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold">{e.title}</span>
                     <span className="block truncate text-xs text-muted">
-                      {EVENT_META[e.kind].label} · {company.get(e.application_id)}
+                      {dict.eventKind[e.kind]} · {company.get(e.application_id)}
                     </span>
                   </span>
                   <span className={`shrink-0 font-mono text-[11px] font-bold ${w.urgent ? "text-rose-600 dark:text-rose-400" : "text-muted"}`}>{w.text}</span>

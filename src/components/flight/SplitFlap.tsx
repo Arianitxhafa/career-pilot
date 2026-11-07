@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZËÇ0123456789";
 
 /**
  * A split-flap display, like an airport departures board: when `text` changes,

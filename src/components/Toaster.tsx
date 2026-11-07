@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CircleAlert, CircleCheck, X } from "lucide-react";
+import { useT } from "@/i18n/client";
 
 type Toast = { id: number; message: string; kind: "success" | "error" };
 const EVENT = "careerpilot:toast";
@@ -14,6 +15,7 @@ export function toast(message: string, kind: Toast["kind"] = "success") {
 
 export function Toaster() {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const dismiss = useT().board.dismiss;
 
   useEffect(() => {
     const onToast = (e: Event) => {
@@ -35,7 +37,7 @@ export function Toaster() {
             <CircleAlert className="mt-px size-5 shrink-0 text-rose-500" aria-hidden />
           )}
           <p className="flex-1 font-medium">{t.message}</p>
-          <button onClick={() => setToasts((ts) => ts.filter((x) => x.id !== t.id))} aria-label="Dismiss" className="rounded-lg p-1 text-muted hover:bg-surface-2 hover:text-fg">
+          <button onClick={() => setToasts((ts) => ts.filter((x) => x.id !== t.id))} aria-label={dismiss} className="rounded-lg p-1 text-muted hover:bg-surface-2 hover:text-fg">
             <X className="size-4" />
           </button>
         </div>

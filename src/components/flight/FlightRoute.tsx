@@ -1,13 +1,13 @@
 const STOPS = [
-  { x: 40, y: 150, code: "SAV", label: "Saved", hint: "Check-in" },
-  { x: 290, y: 70, code: "APP", label: "Applied", hint: "Boarding" },
-  { x: 560, y: 120, code: "INT", label: "Interview", hint: "Take-off" },
-  { x: 820, y: 40, code: "OFR", label: "Offer", hint: "Landing" },
+  { x: 40, y: 150, code: "SAV" },
+  { x: 290, y: 70, code: "APP" },
+  { x: 560, y: 120, code: "INT" },
+  { x: 820, y: 40, code: "OFR" },
 ];
 const PATH = "M40 150 C 140 150, 200 70, 290 70 S 470 120, 560 120 S 740 40, 820 40";
 
 /** The application journey drawn as a flight route (drawn on scroll), with a plane flying it on a loop. */
-export function FlightRoute() {
+export function FlightRoute({ stops }: { stops: { label: string; hint: string }[] }) {
   return (
     <div>
       <svg viewBox="0 0 860 200" className="h-auto w-full overflow-visible" aria-hidden>
@@ -29,11 +29,11 @@ export function FlightRoute() {
         </g>
       </svg>
       <ol className="mt-2 grid grid-cols-4 gap-2 text-center">
-        {STOPS.map((s) => (
+        {STOPS.map((s, i) => (
           <li key={s.code}>
             <p className="font-mono text-xs font-bold tracking-[0.2em] text-brand">{s.code}</p>
-            <p className="mt-0.5 font-semibold">{s.label}</p>
-            <p className="text-xs text-muted">{s.hint}</p>
+            <p className="mt-0.5 font-semibold">{stops[i].label}</p>
+            <p className="text-xs text-muted">{stops[i].hint}</p>
           </li>
         ))}
       </ol>

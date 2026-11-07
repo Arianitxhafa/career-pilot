@@ -10,8 +10,12 @@ import type { Contact, HistoryEntry } from "@/lib/applications";
 import type { AppEvent } from "@/lib/events";
 import type { DialogTab } from "@/components/ApplicationDialog";
 import { ThisWeek } from "@/components/plan/ThisWeek";
+import { getLocale, getT } from "@/i18n/server";
+import { formatDate } from "@/lib/events";
 
-export const metadata: Metadata = { title: "Dashboard" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT()).dashboard.title };
+}
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ open?: string; tab?: string }> }) {
   const { open, tab } = await searchParams;
@@ -42,17 +46,18 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     if (!analyses[row.application_id]) analyses[row.application_id] = row as Analysis;
   }
   const aiEnabled = Boolean(process.env.ANTHROPIC_API_KEY);
-  const name = user.is_anonymous ? "Pilot" : (user.user_metadata?.full_name as string | undefined)?.split(" ")[0];
+  const [t, locale] = [(await getT()).dashboard, await getLocale()];
+  const name = user.is_anonymous ? t.pilot : (user.user_metadata?.full_name as string | undefined)?.split(" ")[0];
   const hour = Number(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hour12: false, timeZone: "Europe/Belgrade" }).format(new Date()));
-  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-  const today = new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "Europe/Belgrade" }).toUpperCase();
+  const greeting = hour < 12 ? t.morning : hour < 18 ? t.afternoon : t.evening;
+  const today = formatDate(new Date(), locale, { weekday: true, day: true, month: "short" }).toUpperCase();
 
   return (
     <div className="flex flex-1 flex-col">
       <main className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
         <div className="flex flex-wrap items-end justify-between gap-4 animate-rise">
           <div>
-            <p className="font-mono text-xs font-bold tracking-[0.22em] text-brand">MISSION CONTROL · {today}</p>
+            <p className="font-mono text-xs font-bold tracking-[0.22em] text-brand">{t.eyebrow} · {today}</p>
             <h1 className="mt-2 font-display text-4xl font-bold tracking-tight sm:text-5xl">
               {greeting}
               {name ? <span className="text-brand">, {name}.</span> : "."}
@@ -60,12 +65,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </div>
           {!hasCv && (
             <Link href="/dashboard/cv" className="rounded-xl border border-amber/40 bg-amber-soft px-3.5 py-2 text-sm font-medium transition hover:border-amber">
-              ✨ Add your CV to unlock the co-pilot →
+              {t.addCv}
             </Link>
           )}
         </div>
-        <StatsBar stats={computeStats(applications)} />
-        <ThisWeek events={events} applications={applications} />
+        <StatsBar stats={computeStats(applications)} t={(await getT()).stats} />
+        <ThisWeek events={events} applications={applications} dict={await getT()} locale={locale} />
         <Board
           applications={applications}
           analyses={analyses}

@@ -142,7 +142,34 @@ export type BasicMatch = {
   detected: number;
 };
 
-export function matchCvToJob(cv: string, jobPost: string): BasicMatch {
+// Result text in both languages. Kept in this module so it stays dependency-free for the unit tests.
+const TEXT = {
+  en: {
+    rough: "The job post names only a few specific technologies, so this score is a rough guide — read the requirements yourself too.",
+    strong: (m: number, n: number) => `Your CV covers ${m} of the ${n} skills this job asks for — apply with confidence.`,
+    close: (m: number, n: number) => `You match ${m} of the ${n} skills this job asks for. Close the gaps below to stand out.`,
+    weak: (m: number, n: number) => `Your CV shows ${m} of the ${n} skills this job asks for — focus on the requirements below.`,
+    required: (s: string) => `“${s}” is listed as a requirement — if you have that experience, mention it in a project bullet.`,
+    niceToHave: (list: string) => `Nice-to-haves you could add if you know them: ${list}.`,
+    years: (y: string) => `The post asks for about ${y}+ year(s) of experience — highlight shipped projects and their impact to make up for it.`,
+    wording: "Use the job post's exact wording for skills you have, so applicant tracking systems pick them up.",
+    inCv: (s: string, nice: boolean) => `${s} — in your CV${nice ? " (nice to have)" : ""}`,
+  },
+  sq: {
+    rough: "Shpallja përmend vetëm pak teknologji specifike, ndaj këto pikë janë orientuese — lexoji vetë kërkesat gjithashtu.",
+    strong: (m: number, n: number) => `CV-ja jote mbulon ${m} nga ${n} aftësitë që kërkon kjo punë — apliko me besim.`,
+    close: (m: number, n: number) => `Përputhesh në ${m} nga ${n} aftësitë që kërkon kjo punë. Plotëso mungesat më poshtë për t'u dalluar.`,
+    weak: (m: number, n: number) => `CV-ja jote tregon ${m} nga ${n} aftësitë që kërkon kjo punë — përqendrohu te kërkesat më poshtë.`,
+    required: (s: string) => `“${s}” është kërkesë — nëse ke përvojë me të, përmende te një projekt.`,
+    niceToHave: (list: string) => `Aftësi të dëshirueshme që mund t'i shtosh nëse i di: ${list}.`,
+    years: (y: string) => `Shpallja kërkon rreth ${y}+ vit përvojë — thekso projektet e përfunduara dhe ndikimin e tyre për ta kompensuar.`,
+    wording: "Përdor të njëjtat fjalë si shpallja për aftësitë që i ke, që sistemet e përzgjedhjes (ATS) t'i dallojnë.",
+    inCv: (s: string, nice: boolean) => `${s} — në CV-në tënde${nice ? " (e dëshirueshme)" : ""}`,
+  },
+};
+
+export function matchCvToJob(cv: string, jobPost: string, locale: "en" | "sq" = "en"): BasicMatch {
+  const t = TEXT[locale];
   const { requiredText, optionalText } = splitJobPost(jobPost);
   const requiredSkills = findSkills(requiredText);
   const optionalSkills = [...findSkills(optionalText)].filter((s) => !requiredSkills.has(s));
@@ -163,29 +190,29 @@ export function matchCvToJob(cv: string, jobPost: string): BasicMatch {
 
   const verdict =
     weights.length < 3
-      ? "The job post names only a few specific technologies, so this score is a rough guide — read the requirements yourself too."
+      ? t.rough
       : score >= 75
-        ? `Your CV covers ${matched.length} of the ${weights.length} skills this job asks for — apply with confidence.`
+        ? t.strong(matched.length, weights.length)
         : score >= 50
-          ? `You match ${matched.length} of the ${weights.length} skills this job asks for. Close the gaps below to stand out.`
-          : `Your CV shows ${matched.length} of the ${weights.length} skills this job asks for — focus on the requirements below.`;
+          ? t.close(matched.length, weights.length)
+          : t.weak(matched.length, weights.length);
 
   const suggestions: string[] = [];
   for (const s of missingRequired.slice(0, 4)) {
-    suggestions.push(`“${s}” is listed as a requirement — if you have that experience, mention it in a project bullet.`);
+    suggestions.push(t.required(s));
   }
   if (missingOptional.length) {
-    suggestions.push(`Nice-to-haves you could add if you know them: ${missingOptional.slice(0, 4).join(", ")}.`);
+    suggestions.push(t.niceToHave(missingOptional.slice(0, 4).join(", ")));
   }
   if (years) {
-    suggestions.push(`The post asks for about ${years}+ year(s) of experience — highlight shipped projects and their impact to make up for it.`);
+    suggestions.push(t.years(years));
   }
-  suggestions.push("Use the job post's exact wording for skills you have, so applicant tracking systems pick them up.");
+  suggestions.push(t.wording);
 
   return {
     score,
     verdict,
-    strengths: matched.map((x) => `${x.s} — in your CV${x.w < 1 ? " (nice to have)" : ""}`),
+    strengths: matched.map((x) => t.inCv(x.s, x.w < 1)),
     missing_keywords: [...missingRequired, ...missingOptional],
     suggestions,
     cover_letter: "",

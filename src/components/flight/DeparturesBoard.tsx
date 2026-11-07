@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { SplitFlap } from "./SplitFlap";
+import { useT } from "@/i18n/client";
 
 type Row = { time: string; flight: string; company: string; role: string; gate: string; status: number };
-const ROUTE = ["SAVED", "APPLIED", "INTERVIEW", "OFFER"] as const;
+const STAGES = 4;
 const TONE = ["text-slate-300", "text-sky-300", "text-board-ink", "text-emerald-300"];
 
 const START: Row[] = [
@@ -18,26 +19,28 @@ const START: Row[] = [
 /** A live departures board where applications move from Saved to Offer, one flap at a time. */
 export function DeparturesBoard({ compact = false }: { compact?: boolean }) {
   const [rows, setRows] = useState(START);
+  const t = useT().landing.board;
+  const width = Math.max(...t.route.map((s) => s.length));
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let i = 0;
     const id = setInterval(() => {
       const row = i++ % START.length;
-      setRows((rs) => rs.map((r, k) => (k === row ? { ...r, status: (r.status + 1) % ROUTE.length } : r)));
+      setRows((rs) => rs.map((r, k) => (k === row ? { ...r, status: (r.status + 1) % STAGES } : r)));
     }, 2200);
     return () => clearInterval(id);
   }, []);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-board text-[#e8ecf6] shadow-[0_40px_90px_-40px_rgb(0_0_0/0.9)]" role="img" aria-label="A departures board showing job applications moving from Saved to Offer">
+    <div className="overflow-hidden rounded-2xl border border-white/10 bg-board text-[#e8ecf6] shadow-[0_40px_90px_-40px_rgb(0_0_0/0.9)]" role="img" aria-label={t.label}>
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
         <p className="flex items-center gap-2 font-mono text-xs font-bold tracking-[0.25em] text-board-ink">
           <span className="relative flex size-2">
             <span className="absolute inline-flex size-full animate-ping rounded-full bg-board-ink/60" />
             <span className="relative inline-flex size-2 rounded-full bg-board-ink" />
           </span>
-          DEPARTURES
+          {t.departures}
         </p>
         <p className="font-mono text-[10px] tracking-widest text-white/40">CAREERPILOT · PRN</p>
       </div>
@@ -45,11 +48,11 @@ export function DeparturesBoard({ compact = false }: { compact?: boolean }) {
         <table className="w-full min-w-[30rem] font-mono text-[11px] sm:text-xs">
           <thead className="text-left text-[10px] tracking-[0.2em] text-white/40">
             <tr>
-              <th className="px-4 py-2 font-medium">TIME</th>
-              {!compact && <th className="px-2 py-2 font-medium">FLIGHT</th>}
-              <th className="px-2 py-2 font-medium">COMPANY</th>
-              <th className="px-2 py-2 font-medium">ROLE</th>
-              <th className="px-4 py-2 font-medium">STATUS</th>
+              <th className="px-4 py-2 font-medium">{t.time}</th>
+              {!compact && <th className="px-2 py-2 font-medium">{t.flight}</th>}
+              <th className="px-2 py-2 font-medium">{t.company}</th>
+              <th className="px-2 py-2 font-medium">{t.role}</th>
+              <th className="px-4 py-2 font-medium">{t.status}</th>
             </tr>
           </thead>
           <tbody>
@@ -60,7 +63,7 @@ export function DeparturesBoard({ compact = false }: { compact?: boolean }) {
                 <td className="px-2 py-2.5 font-semibold">{r.company}</td>
                 <td className="px-2 py-2.5 text-white/70">{r.role}</td>
                 <td className={`px-4 py-2.5 font-bold ${TONE[r.status]}`}>
-                  <SplitFlap text={ROUTE[r.status]} length={9} />
+                  <SplitFlap text={t.route[r.status]} length={width} />
                 </td>
               </tr>
             ))}

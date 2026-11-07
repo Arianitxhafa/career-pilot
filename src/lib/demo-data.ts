@@ -175,3 +175,36 @@ export function demoPath(status: Status, daysAgo: number, appliedDaysAgo?: numbe
   if (status === "offer") path.push({ from: "interview", to: "offer", daysAgo: Math.max(0, appliedDaysAgo - 21) });
   return path;
 }
+
+/** Albanian versions of the demo's notes, places, event titles and roles (job titles and posts stay as companies publish them). */
+export const DEMO_SQ: Record<string, string> = {
+  Prishtina: "Prishtinë",
+  Remote: "Në distancë",
+  "Prishtina · Hybrid": "Prishtinë · Hibride",
+  Tirana: "Tiranë",
+  "Referral possible through a classmate.": "Mundësi rekomandimi përmes një shoku të klasës.",
+  "Applied through LinkedIn. Follow up next week.": "Aplikova përmes LinkedIn. Follow-up javën e ardhshme.",
+  "Technical interview on Thursday — review hooks, Expo Router and Supabase RLS.": "Intervistë teknike të enjten — rishiko hooks, Expo Router dhe Supabase RLS.",
+  "Take-home task submitted. Final round with the CTO.": "Detyra për shtëpi u dorëzua. Raundi final me CTO-në.",
+  "Offer received — reply by Friday. 🎉": "Oferta erdhi — përgjigju deri të premten. 🎉",
+  "Asked for more backend experience — building it now.": "Kërkuan më shumë përvojë backend — po e ndërtoj tani.",
+  "€700 / month": "€700 / muaj",
+  "Final round with the CTO": "Raundi final me CTO-në",
+  "Deltaworks HQ, Rr. Garibaldi 4, Prishtina": "Zyrat e Deltaworks, Rr. Garibaldi 4, Prishtinë",
+  "Walk through the take-home task. Ask about the team and mentoring.": "Shpjego detyrën për shtëpi. Pyet për ekipin dhe mentorimin.",
+  "Technical interview — React Native": "Intervistë teknike — React Native",
+  "Review hooks, Expo Router and Supabase RLS.": "Rishiko hooks, Expo Router dhe Supabase RLS.",
+  "Follow up with Brightloop": "Follow-up me Brightloop",
+  "No reply in 10 days — send a short, friendly email.": "Pa përgjigje prej 10 ditësh — dërgo një email të shkurtër e miqësor.",
+  "Follow up with Lumen Apps": "Follow-up me Lumen Apps",
+  "Reply to the Pixelforge offer": "Përgjigju ofertës së Pixelforge",
+  "Compare with Orbitly before answering.": "Krahasoje me Orbitly para se të përgjigjesh.",
+  "Applications close — Northwind": "Mbyllen aplikimet — Northwind",
+  "HR screening call": "Telefonatë fillestare me HR",
+  Phone: "Telefon",
+  "Submit the take-home task": "Dorëzo detyrën për shtëpi",
+  "Technical Recruiter": "Rekrutuese teknike",
+  "Mobile Lead (interviewer)": "Udhëheqës i ekipit mobile (intervistues)",
+  "People & Culture": "Burimet njerëzore",
+  "Engineering Manager": "Menaxher i inxhinierisë",
+};

@@ -33,7 +33,7 @@ Rules:
 
 export class CopilotError extends Error {}
 
-export async function analyzeMatch(input: { cv: string; jobPost: string; company: string; position: string }): Promise<MatchResult> {
+export async function analyzeMatch(input: { cv: string; jobPost: string; company: string; position: string; locale?: "en" | "sq" }): Promise<MatchResult> {
   const client = new Anthropic();
 
   const response = await client.beta.messages.parse({
@@ -48,7 +48,7 @@ export async function analyzeMatch(input: { cv: string; jobPost: string; company
       {
         role: "user",
         content: `Role: ${input.position} at ${input.company}
-
+${input.locale === "sq" ? "Write the verdict, strengths and suggestions in Albanian (shqip). Keep missing_keywords in the job post's own wording.\n" : ""}
 <cv>
 ${input.cv}
 </cv>

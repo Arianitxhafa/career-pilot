@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { analyzeMatch, CopilotError, type MatchResult } from "@/lib/copilot";
 import { matchCvToJob } from "@/lib/matcher";
+import { getLocale, getT } from "@/i18n/server";
 
 // "ai" = Claude analysis with a cover letter; "basic" = free keyword match. Older rows have no mode (they were AI).
 export type AnalysisResult = MatchResult & { mode?: "ai" | "basic" };
@@ -28,12 +29,13 @@ async function requireUser() {
 export async function saveCv(_prev: CvState, formData: FormData): Promise<CvState> {
   const { supabase, user } = await requireUser();
   const cv = String(formData.get("cv_text") ?? "").trim();
-  if (cv.length > 20000) return { error: "Your CV is too long — keep it under 20,000 characters." };
+  const t = (await getT()).copilot.errors;
+  if (cv.length > 20000) return { error: t.cvTooLong };
 
   const { error } = await supabase
     .from("profiles")
     .upsert({ user_id: user.id, cv_text: cv, updated_at: new Date().toISOString() });
-  if (error) return { error: "Couldn't save your CV — please try again." };
+  if (error) return { error: t.cvSave };
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/cv");
@@ -44,6 +46,8 @@ export async function analyzeApplication(_prev: AnalyzeState, formData: FormData
   const { supabase, user } = await requireUser();
   const applicationId = String(formData.get("application_id") ?? "");
   const jobPost = String(formData.get("job_description") ?? "").trim().slice(0, 20000);
+  const locale = await getLocale();
+  const t = (await getT()).copilot.errors;
 
   // Save the job post first so it's kept even if the analysis fails.
   const { data: app, error: appError } = await supabase
@@ -52,17 +56,17 @@ export async function analyzeApplication(_prev: AnalyzeState, formData: FormData
     .eq("id", applicationId)
     .select("company, position")
     .single();
-  if (appError || !app) return { error: "Couldn't find this application." };
+  if (appError || !app) return { error: t.notFound };
 
-  if (jobPost.length < MIN_JOB_POST) return { error: "Paste the full job post (at least a few paragraphs) so the co-pilot has enough to work with." };
+  if (jobPost.length < MIN_JOB_POST) return { error: t.shortPost };
 
   const { data: profile } = await supabase.from("profiles").select("cv_text").eq("user_id", user.id).maybeSingle();
   const cv = profile?.cv_text?.trim() ?? "";
-  if (cv.length < MIN_CV) return { error: "Add your CV first — open “My CV” and paste its text." };
+  if (cv.length < MIN_CV) return { error: t.noCv };
 
   // Without an API key, fall back to the free keyword matcher.
   if (!process.env.ANTHROPIC_API_KEY) {
-    return saveAnalysis(supabase, applicationId, matchCvToJob(cv, jobPost));
+    return saveAnalysis(supabase, applicationId, matchCvToJob(cv, jobPost, locale), t.notSaved);
   }
 
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -73,37 +77,38 @@ export async function analyzeApplication(_prev: AnalyzeState, formData: FormData
     .gte("created_at", since)
     .eq("result->>mode", "ai");
   const used = count ?? 0;
-  if (used >= DAILY_LIMIT) return { error: `You've used all ${DAILY_LIMIT} AI analyses for today — try again tomorrow.`, remaining: 0 };
+  if (used >= DAILY_LIMIT) return { error: t.limit(DAILY_LIMIT), remaining: 0 };
 
   let result: MatchResult;
   try {
-    result = await analyzeMatch({ cv, jobPost, company: app.company, position: app.position });
+    result = await analyzeMatch({ cv, jobPost, company: app.company, position: app.position, locale });
   } catch (error) {
     if (error instanceof CopilotError) return { error: error.message };
-    if (error instanceof Anthropic.RateLimitError) return { error: "The co-pilot is busy right now — try again in a minute." };
-    if (error instanceof Anthropic.AuthenticationError) return { error: "The AI co-pilot isn't configured correctly on this server." };
+    if (error instanceof Anthropic.RateLimitError) return { error: t.busy };
+    if (error instanceof Anthropic.AuthenticationError) return { error: t.config };
     if (error instanceof Anthropic.APIError) {
       console.error("Claude API error", error.status, error.message);
-      return { error: "The co-pilot is unavailable right now — please try again." };
+      return { error: t.unavailable };
     }
     throw error;
   }
 
-  const saved = await saveAnalysis(supabase, applicationId, { ...result, mode: "ai" });
+  const saved = await saveAnalysis(supabase, applicationId, { ...result, mode: "ai" }, t.notSaved);
   return saved?.analysis ? { ...saved, remaining: DAILY_LIMIT - used - 1 } : saved;
 }
 
 async function saveAnalysis(
   supabase: Awaited<ReturnType<typeof createClient>>,
   applicationId: string,
-  result: AnalysisResult
+  result: AnalysisResult,
+  notSaved: string
 ): Promise<AnalyzeState> {
   const { data: saved, error } = await supabase
     .from("ai_analyses")
     .insert({ application_id: applicationId, score: result.score, result })
     .select("score, result, created_at")
     .single();
-  if (error || !saved) return { error: "The analysis worked but couldn't be saved — please try again." };
+  if (error || !saved) return { error: notSaved };
 
   revalidatePath("/dashboard");
   return { analysis: saved as Analysis };

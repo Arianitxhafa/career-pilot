@@ -7,6 +7,7 @@ import { EVENT_KINDS, EVENT_META, whenLabel, type AppEvent, type EventKind } fro
 import { deleteEvent, saveEvent, setEventDone } from "@/app/dashboard/plan-actions";
 import { toast } from "@/components/Toaster";
 import { inputClass, primaryButton } from "@/components/ui";
+import { useLocale, useT } from "@/i18n/client";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const localDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -14,14 +15,16 @@ const isUrl = (s: string) => /^https?:\/\//i.test(s);
 /** A date N days from today, for the date input. */
 const inDays = (n: number) => localDate(new Date(Date.now() + n * 86_400_000));
 
-const TITLES: Record<EventKind, (app: Application) => string> = {
-  interview: (a) => `Interview — ${a.company}`,
-  follow_up: (a) => `Follow up with ${a.company}`,
-  deadline: (a) => `Deadline — ${a.company}`,
-  other: (a) => a.company,
-};
-
 export function PlanPanel({ app, events }: { app: Application; events: AppEvent[] }) {
+  const dict = useT();
+  const t = dict.plan;
+  const locale = useLocale();
+  const TITLES: Record<EventKind, (app: Application) => string> = {
+    interview: (a) => t.titles.interview(a.company),
+    follow_up: (a) => t.titles.follow_up(a.company),
+    deadline: (a) => t.titles.deadline(a.company),
+    other: (a) => a.company,
+  };
   const [state, action, pending] = useActionState(saveEvent, undefined);
   const [, startSave] = useTransition();
   const [busy, startBusy] = useTransition();
@@ -32,8 +35,8 @@ export function PlanPanel({ app, events }: { app: Application; events: AppEvent[
   const sorted = [...events].sort((a, b) => Number(a.done) - Number(b.done) || a.starts_at.localeCompare(b.starts_at));
 
   useEffect(() => {
-    if (state?.ok) toast("Added to your calendar 📅");
-  }, [state]);
+    if (state?.ok) toast(t.added);
+  }, [state, t]);
 
   const pickKind = (k: EventKind) => {
     setKind(k);
@@ -64,7 +67,7 @@ export function PlanPanel({ app, events }: { app: Application; events: AppEvent[
         <ul className="grid gap-2">
           {sorted.map((e) => {
             const meta = EVENT_META[e.kind];
-            const when = whenLabel(e);
+            const when = whenLabel(e, undefined, locale);
             return (
               <li key={e.id} className={`flex items-start gap-3 rounded-xl border border-line p-3 ${e.done ? "opacity-60" : ""}`}>
                 <button
@@ -72,9 +75,9 @@ export function PlanPanel({ app, events }: { app: Application; events: AppEvent[
                   disabled={busy}
                   onClick={() => startBusy(async () => {
                     await setEventDone(e.id, !e.done);
-                    toast(e.done ? "Marked as not done" : "Done ✓");
+                    toast(e.done ? t.notDone : t.done);
                   })}
-                  aria-label={e.done ? `Mark “${e.title}” as not done` : `Mark “${e.title}” as done`}
+                  aria-label={e.done ? t.markNotDone(e.title) : t.markDone(e.title)}
                   aria-pressed={e.done}
                   className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-md border transition ${e.done ? "border-brand bg-brand text-brand-ink" : "border-line hover:border-brand"}`}
                 >
@@ -83,12 +86,12 @@ export function PlanPanel({ app, events }: { app: Application; events: AppEvent[
                 <div className="min-w-0 flex-1">
                   <p className={`text-sm font-semibold ${e.done ? "line-through" : ""}`}>{e.title}</p>
                   <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
-                    <span className={`rounded-md px-1.5 py-0.5 font-semibold ${meta.chip}`}>{meta.label}</span>
+                    <span className={`rounded-md px-1.5 py-0.5 font-semibold ${meta.chip}`}>{dict.eventKind[e.kind]}</span>
                     <span className={when.urgent && !e.done ? "font-semibold text-rose-600 dark:text-rose-400" : ""}>{when.text}</span>
                     {e.location &&
                       (isUrl(e.location) ? (
                         <a href={e.location} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand hover:underline">
-                          <Video className="size-3.5" /> Join link
+                          <Video className="size-3.5" /> {t.joinLink}
                         </a>
                       ) : (
                         <span className="inline-flex items-center gap-1">
@@ -98,7 +101,7 @@ export function PlanPanel({ app, events }: { app: Application; events: AppEvent[
                   </p>
                   {e.notes && <p className="mt-1 text-xs text-muted">{e.notes}</p>}
                 </div>
-                <a href={`/dashboard/events/${e.id}/ics`} className="rounded-lg p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg" aria-label={`Add “${e.title}” to your calendar (.ics)`} title="Add to Google / Apple / Outlook calendar">
+                <a href={`/dashboard/events/${e.id}/ics`} className="rounded-lg p-1.5 text-muted transition hover:bg-surface-2 hover:text-fg" aria-label={t.addToCalendar(e.title)} title={t.addToCalendarTitle}>
                   <Download className="size-4" />
                 </a>
                 <button
@@ -106,10 +109,10 @@ export function PlanPanel({ app, events }: { app: Application; events: AppEvent[
                   disabled={busy}
                   onClick={() => startBusy(async () => {
                     await deleteEvent(e.id);
-                    toast("Removed from your plan");
+                    toast(t.removed);
                   })}
                   className="rounded-lg p-1.5 text-muted transition hover:bg-rose-500/10 hover:text-rose-600"
-                  aria-label={`Delete “${e.title}”`}
+                  aria-label={t.deleteItem(e.title)}
                 >
                   <Trash2 className="size-4" />
                 </button>
@@ -118,7 +121,7 @@ export function PlanPanel({ app, events }: { app: Application; events: AppEvent[
           })}
         </ul>
       ) : (
-        <p className="rounded-xl border border-dashed border-line px-4 py-5 text-center text-sm text-muted">No interviews or follow-ups yet. Add one below — you&apos;ll see it on the calendar and on the card.</p>
+        <p className="rounded-xl border border-dashed border-line px-4 py-5 text-center text-sm text-muted">{t.empty}</p>
       )}
 
       <form
@@ -134,13 +137,13 @@ export function PlanPanel({ app, events }: { app: Application; events: AppEvent[
         <input type="hidden" name="application_id" value={app.id} />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="flex items-center gap-2 text-sm font-semibold">
-            <CalendarPlus className="size-4 text-brand" /> Add to the plan
+            <CalendarPlus className="size-4 text-brand" /> {t.addHeading}
           </p>
           <button type="button" onClick={quickFollowUp} className="text-xs font-semibold text-brand hover:underline">
-            + Follow up in 1 week
+            {t.quickFollowUp}
           </button>
         </div>
-        <div role="radiogroup" aria-label="Kind" className="flex flex-wrap gap-1.5">
+        <div role="radiogroup" aria-label={t.kind} className="flex flex-wrap gap-1.5">
           {EVENT_KINDS.map((k) => (
             <button
               key={k}
@@ -150,26 +153,25 @@ export function PlanPanel({ app, events }: { app: Application; events: AppEvent[
               onClick={() => pickKind(k)}
               className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${kind === k ? EVENT_META[k].chip + " ring-1 ring-current" : "bg-surface text-muted hover:text-fg"}`}
             >
-              {EVENT_META[k].label}
+              {dict.eventKind[k]}
             </button>
           ))}
           <input type="hidden" name="kind" value={kind} />
         </div>
-        <input name="title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} required aria-label="Title" className={inputClass} />
+        <input name="title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} required aria-label={t.title} className={inputClass} />
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_120px_130px]">
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required aria-label="Date" className={inputClass} />
-          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} aria-label="Time" className={inputClass} />
-          <select name="duration_minutes" defaultValue="60" aria-label="Duration" className={`${inputClass} col-span-2 sm:col-span-1`}>
-            <option value="15">15 min</option>
-            <option value="30">30 min</option>
-            <option value="45">45 min</option>
-            <option value="60">1 hour</option>
-            <option value="90">1.5 hours</option>
-            <option value="120">2 hours</option>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required aria-label={t.date} className={inputClass} />
+          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} aria-label={t.time} className={inputClass} />
+          <select name="duration_minutes" defaultValue="60" aria-label={t.duration} className={`${inputClass} col-span-2 sm:col-span-1`}>
+            {Object.entries(t.durations).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
           </select>
         </div>
-        <input name="location" maxLength={300} placeholder="Meeting link or address (optional)" aria-label="Location or meeting link" className={inputClass} />
-        <textarea name="notes" maxLength={2000} rows={2} placeholder="Prep notes (optional)" aria-label="Notes" className={`${inputClass} resize-y`} />
+        <input name="location" maxLength={300} placeholder={t.locationPh} aria-label={t.locationLabel} className={inputClass} />
+        <textarea name="notes" maxLength={2000} rows={2} placeholder={t.notesPh} aria-label={t.notes} className={`${inputClass} resize-y`} />
         {state?.error && (
           <p role="alert" className="rounded-lg bg-rose-500/10 px-3 py-2 text-sm text-rose-600 dark:text-rose-400">
             {state.error}
@@ -177,12 +179,12 @@ export function PlanPanel({ app, events }: { app: Application; events: AppEvent[
         )}
         <div className="flex justify-end gap-2">
           <button type="submit" disabled={pending} className={primaryButton}>
-            {pending ? "Saving…" : "Add to plan"}
+            {pending ? t.saving : t.submit}
           </button>
         </div>
       </form>
       <p className="text-xs text-muted">
-        Tip: <span className="inline-flex items-center gap-1"><Download className="size-3" /></span> downloads an .ics file — open it to add the event to Google Calendar, Apple Calendar or Outlook, with a reminder one hour before.
+        {t.tipA} <span className="inline-flex items-center gap-1"><Download className="size-3" /></span> {t.tipB}
       </p>
     </div>
   );

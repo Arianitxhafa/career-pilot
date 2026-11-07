@@ -16,6 +16,8 @@ CareerPilot keeps every job application on one Kanban board — from the first s
 - **Interviews & follow-ups** — plan interviews (time, duration, meeting link or address), follow-ups and deadlines per application; one-click "follow up in a week"; overdue follow-ups turn red on the card
 - **Calendar** — month view with navigation, "Needs attention" and "Upcoming" lists, and a **This week** strip on the board
 - **.ics export** — add any event (or all upcoming ones) to Google Calendar, Apple Calendar or Outlook, with a reminder an hour before (RFC 5545 escaping and line folding, unit-tested)
+- **Albanian & English** — every screen, error message, date and the free co-pilot's advice in Shqip or English; picked from the browser on the first visit and switchable anytime (SQ / EN), remembered in a cookie so the server renders the right language with no flash
+- **Light, dark or system theme** — a toggle next to the language switch; the choice is applied instantly and rendered by the server on the next visit
 - **Insights** — a stage funnel with conversion rates, applications per week against your goal (hand-drawn SVG chart with tooltips and a screen-reader table), median time to hear back, interview rate, and the skills the jobs you're pursuing ask for most that your CV misses
 - **Weekly goal** — set how many applications to send a week, with a progress ring and a week streak
 - **People & history** — recruiters and interviewers per application (email, phone, LinkedIn), and a timeline of every stage change written by a Postgres trigger
@@ -36,7 +38,7 @@ CareerPilot keeps every job application on one Kanban board — from the first s
 
 ### Coming next
 - CV upload from PDF and match scores across all saved jobs
-- Import a job from a link, Albanian / English, installable app (PWA) and CSV export
+- Import a job from a link, installable app (PWA) and CSV export
 
 ## 🛠 Tech stack
 

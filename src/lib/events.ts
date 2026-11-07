@@ -37,19 +37,62 @@ export function timeLabel(date: Date, timeZone = TIME_ZONE) {
   return new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", minute: "2-digit" }).format(date);
 }
 
+// Month and day names by hand: browsers (and headless Chrome) don't all ship Albanian date data,
+// so Intl would print English on the client and break hydration. Only numbers come from Intl.
+const NAMES = {
+  en: {
+    months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    monthsLong: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    days: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+  },
+  sq: {
+    months: ["jan", "shk", "mar", "pri", "maj", "qer", "korr", "gush", "sht", "tet", "nën", "dhj"],
+    monthsLong: ["janar", "shkurt", "mars", "prill", "maj", "qershor", "korrik", "gusht", "shtator", "tetor", "nëntor", "dhjetor"],
+    days: ["Die", "Hën", "Mar", "Mër", "Enj", "Pre", "Sht"],
+  },
+};
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+export type DateStyle = { weekday?: boolean; day?: boolean; month?: "short" | "long"; year?: boolean; time?: boolean };
+
+/** "Sat 7 Nov", "7 Nov 2026", "November 2026", "7 Nov, 14:30" — or "Sht 7 nën", "nëntor 2026"… — identical on server and client. */
+export function formatDate(date: Date, locale: "en" | "sq" = "en", style: DateStyle = { day: true, month: "short" }, timeZone = TIME_ZONE) {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", { timeZone, year: "numeric", month: "numeric", day: "numeric", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+      .formatToParts(date)
+      .map((x) => [x.type, x.value])
+  );
+  const names = NAMES[locale];
+  const month = Number(p.month) - 1;
+  const out: string[] = [];
+  if (style.weekday) out.push(names.days[WEEKDAYS.indexOf(p.weekday)]);
+  if (style.day) out.push(String(Number(p.day)));
+  if (style.month) out.push((style.month === "long" ? names.monthsLong : names.months)[month]);
+  if (style.year) out.push(p.year);
+  const text = out.join(" ");
+  return style.time ? `${text}${text ? ", " : ""}${p.hour}:${p.minute}` : text;
+}
+
 const dayDiff = (a: string, b: string) => Math.round((Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / 86_400_000);
 
-/** "Today 14:00", "Tomorrow 10:00", "Fri 12 Nov", "2 days overdue". */
-export function whenLabel(event: Pick<AppEvent, "starts_at" | "done" | "kind">, now = new Date(), timeZone = TIME_ZONE) {
+// Kept here (not in the app dictionaries) so this module stays dependency-free for the unit tests.
+const WHEN_WORDS = {
+  en: { today: "Today", tomorrow: "Tomorrow", overdue: (n: number) => `${n} day${n === 1 ? "" : "s"} overdue` },
+  sq: { today: "Sot", tomorrow: "Nesër", overdue: (n: number) => `${n} ditë vonesë` },
+};
+
+/** "Today 14:00", "Tomorrow 10:00", "Fri 12 Nov", "2 days overdue" — or the Albanian equivalents. */
+export function whenLabel(event: Pick<AppEvent, "starts_at" | "done" | "kind">, now = new Date(), locale: "en" | "sq" = "en", timeZone = TIME_ZONE) {
+  const w = WHEN_WORDS[locale];
   const at = new Date(event.starts_at);
   const diff = dayDiff(dayKey(at, timeZone), dayKey(now, timeZone));
   const time = event.kind === "follow_up" || event.kind === "deadline" ? "" : ` ${timeLabel(at, timeZone)}`;
-  if (!event.done && at < now && diff < 0) return { text: `${-diff} day${diff === -1 ? "" : "s"} overdue`, urgent: true };
-  if (diff === 0) return { text: `Today${time}`, urgent: !event.done };
-  if (diff === 1) return { text: `Tomorrow${time}`, urgent: false };
+  if (!event.done && at < now && diff < 0) return { text: w.overdue(-diff), urgent: true };
+  if (diff === 0) return { text: `${w.today}${time}`, urgent: !event.done };
+  if (diff === 1) return { text: `${w.tomorrow}${time}`, urgent: false };
   if (diff > 1 && diff < 7)
-    return { text: `${new Intl.DateTimeFormat("en-GB", { timeZone, weekday: "short" }).format(at)}${time}`, urgent: false };
-  return { text: `${new Intl.DateTimeFormat("en-GB", { timeZone, day: "numeric", month: "short" }).format(at)}${time}`, urgent: false };
+    return { text: `${formatDate(at, locale, { weekday: true }, timeZone)}${time}`, urgent: false };
+  return { text: `${formatDate(at, locale, { day: true, month: "short" }, timeZone)}${time}`, urgent: false };
 }
 
 /** The next open event for each application, and whether a follow-up/deadline is overdue. */
