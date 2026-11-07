@@ -36,12 +36,23 @@ export async function startDemo(): Promise<DemoState> {
     created_at: daysAgo(a.daysAgo).toISOString(),
   }));
 
+  // A freshly issued session is occasionally rejected for a moment (401), so retry the first write a couple of times.
+  const insertApps = async () => {
+    let result = await supabase.from("applications").insert(rows).select("id, company, job_description");
+    for (let attempt = 1; result.error && attempt <= 2; attempt++) {
+      console.warn(`demo seed retry ${attempt}:`, result.error.message);
+      await new Promise((r) => setTimeout(r, 400 * attempt));
+      result = await supabase.from("applications").insert(rows).select("id, company, job_description");
+    }
+    return result;
+  };
   const [{ data: inserted, error: appsError }] = await Promise.all([
-    supabase.from("applications").insert(rows).select("id, company, job_description"),
+    insertApps(),
     supabase.from("profiles").upsert({ user_id: data.user.id, cv_text: DEMO_CV, weekly_goal: 3, updated_at: new Date().toISOString() }),
   ]);
   if (appsError || !inserted) {
     console.error("demo seed failed", appsError?.message);
+    await supabase.auth.signOut(); // don't leave the visitor inside an empty demo board
     return { error: "The demo couldn't be prepared — please try again." };
   }
 
