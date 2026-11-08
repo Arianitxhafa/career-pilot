@@ -45,24 +45,24 @@ export function DeparturesBoard({ compact = false }: { compact?: boolean }) {
         <p className="font-mono text-[10px] tracking-widest text-white/40">CAREERPILOT · PRN</p>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[30rem] font-mono text-[11px] sm:text-xs">
+        <table className="w-full font-mono text-[11px] sm:min-w-[30rem] sm:text-xs lg:min-w-[26rem] xl:min-w-[30rem]">
           <thead className="text-left text-[10px] tracking-[0.2em] text-white/40">
             <tr>
-              <th className="px-4 py-2 font-medium">{t.time}</th>
-              {!compact && <th className="px-2 py-2 font-medium">{t.flight}</th>}
+              <th className="px-2.5 py-2 font-medium sm:px-4">{t.time}</th>
+              {!compact && <th className="hidden px-2 py-2 font-medium sm:table-cell lg:hidden xl:table-cell">{t.flight}</th>}
               <th className="px-2 py-2 font-medium">{t.company}</th>
-              <th className="px-2 py-2 font-medium">{t.role}</th>
-              <th className="px-4 py-2 font-medium">{t.status}</th>
+              <th className="hidden px-2 py-2 font-medium sm:table-cell">{t.role}</th>
+              <th className="px-2.5 py-2 font-medium sm:px-4">{t.status}</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.flight} className="border-t border-white/[0.06]">
-                <td className="px-4 py-2.5 text-white/70">{r.time}</td>
-                {!compact && <td className="px-2 py-2.5 text-white/50">{r.flight}</td>}
+                <td className="px-2.5 py-2.5 text-white/70 sm:px-4">{r.time}</td>
+                {!compact && <td className="hidden px-2 py-2.5 text-white/50 sm:table-cell lg:hidden xl:table-cell">{r.flight}</td>}
                 <td className="px-2 py-2.5 font-semibold">{r.company}</td>
-                <td className="px-2 py-2.5 text-white/70">{r.role}</td>
-                <td className={`px-4 py-2.5 font-bold ${TONE[r.status]}`}>
+                <td className="hidden px-2 py-2.5 text-white/70 sm:table-cell">{r.role}</td>
+                <td className={`py-2.5 pr-2 pl-2.5 font-bold sm:px-4 ${TONE[r.status]}`}>
                   <SplitFlap text={t.route[r.status]} length={width} />
                 </td>
               </tr>

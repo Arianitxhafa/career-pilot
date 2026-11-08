@@ -60,8 +60,8 @@ export default async function Home() {
               <p className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-muted">
                 <span className="size-1.5 rounded-full bg-emerald-500" /> {t.badge}
               </p>
-              <h1 className="mt-6 font-display text-5xl leading-[0.98] font-bold tracking-tight text-balance sm:text-7xl">
-                {t.heroA} <span className="relative text-brand sm:whitespace-nowrap">{t.heroB}</span>
+              <h1 className="mt-6 font-display text-5xl leading-[0.98] font-bold tracking-tight text-balance sm:text-7xl lg:text-[3.35rem] xl:text-[3.75rem]">
+                {t.heroA} <span className="relative block text-brand">{t.heroB}</span>
               </h1>
               <p className="mt-6 max-w-lg text-lg text-muted text-balance">
                 {t.heroText}
