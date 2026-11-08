@@ -93,23 +93,26 @@ export function WeeklyChart({ data, goal }: { data: Point[]; goal: number }) {
         </div>
       )}
       {empty && <p className="absolute inset-0 grid place-items-center text-sm text-muted">{t.empty(data.length)}</p>}
-      <table className="sr-only">
-        <caption>{t.caption}</caption>
-        <thead>
-          <tr>
-            <th>{t.weekCol}</th>
-            <th>{t.appsCol}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((d) => (
-            <tr key={d.week}>
-              <td>{label(d.week)}</td>
-              <td>{d.count}</td>
+      {/* Tables won't shrink to sr-only's 1px, so the wrapper is the hidden box (else it widens the page on small phones). */}
+      <div className="sr-only">
+        <table>
+          <caption>{t.caption}</caption>
+          <thead>
+            <tr>
+              <th>{t.weekCol}</th>
+              <th>{t.appsCol}</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.map((d) => (
+              <tr key={d.week}>
+                <td>{label(d.week)}</td>
+                <td>{d.count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </figure>
   );
 }

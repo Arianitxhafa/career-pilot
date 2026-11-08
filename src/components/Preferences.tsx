@@ -9,8 +9,8 @@ import { LOCALES, type Theme } from "@/i18n/config";
 const NEXT: Record<Theme, Theme> = { system: "light", light: "dark", dark: "system" };
 const ICON = { system: Monitor, light: Sun, dark: Moon };
 
-/** Theme (system → light → dark) and language (SQ / EN) switches. */
-export function Preferences({ className = "" }: { className?: string }) {
+/** Theme (system → light → dark) and language (SQ / EN) switches. `compact` is the smaller size for phone headers. */
+export function Preferences({ className = "", compact = false }: { className?: string; compact?: boolean }) {
   const t = useT().prefs;
   const locale = useLocale();
   const [theme, setLocalTheme] = useState(useSavedTheme());
@@ -31,13 +31,13 @@ export function Preferences({ className = "" }: { className?: string }) {
       <button
         type="button"
         onClick={cycleTheme}
-        className="grid size-9 place-items-center rounded-xl border border-line bg-surface text-muted transition hover:border-brand/40 hover:text-fg"
+        className={`grid shrink-0 place-items-center border border-line bg-surface text-muted transition hover:border-brand/40 hover:text-fg ${compact ? "size-8 rounded-lg" : "size-9 rounded-xl"}`}
         aria-label={`${t.theme}: ${t.themes[theme]}. ${t.switchTo} ${t.themes[NEXT[theme]]}`}
         title={`${t.theme}: ${t.themes[theme]}`}
       >
         <Icon className="size-4" />
       </button>
-      <div role="group" aria-label={t.language} className={`flex rounded-xl border border-line bg-surface p-0.5 font-mono text-[11px] font-bold transition ${pending ? "opacity-60" : ""}`}>
+      <div role="group" aria-label={t.language} className={`flex shrink-0 border border-line bg-surface p-0.5 font-mono text-[11px] font-bold transition ${compact ? "rounded-lg" : "rounded-xl"} ${pending ? "opacity-60" : ""}`}>
         {LOCALES.map((l) => (
           <button
             key={l}
@@ -46,7 +46,7 @@ export function Preferences({ className = "" }: { className?: string }) {
             aria-pressed={locale === l}
             disabled={pending}
             onClick={() => locale !== l && start(() => setLocale(l))}
-            className={`rounded-lg px-2 py-1.5 tracking-wider uppercase transition ${locale === l ? "bg-brand text-brand-ink" : "text-muted hover:text-fg"}`}
+            className={`tracking-wider uppercase transition ${compact ? "rounded-md px-1.5 py-1" : "rounded-lg px-2 py-1.5"} ${locale === l ? "bg-brand text-brand-ink" : "text-muted hover:text-fg"}`}
             title={l === "sq" ? "Shqip" : "English"}
           >
             {l === "sq" ? "SQ" : "EN"}

@@ -8,6 +8,7 @@ import { FlightRoute } from "@/components/flight/FlightRoute";
 import { CountUp } from "@/components/CountUp";
 import { eyebrow, primaryButton, secondaryButton } from "@/components/ui";
 import { Preferences } from "@/components/Preferences";
+import { LandingMenu } from "@/components/LandingMenu";
 import { getT } from "@/i18n/server";
 
 const FEATURE_ICONS = [GripVertical, BarChart3, Sparkles, Lock, Search, Smartphone];
@@ -17,7 +18,8 @@ export default async function Home() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const t = (await getT()).landing;
+  const dict = await getT();
+  const t = dict.landing;
 
   return (
     <div className="relative flex flex-1 flex-col overflow-x-clip">
@@ -30,8 +32,40 @@ export default async function Home() {
             <a href="#copilot" className="transition hover:text-fg">{t.nav.copilot}</a>
             <a href="#faq" className="transition hover:text-fg">{t.nav.faq}</a>
           </nav>
-          <div className="flex items-center gap-2">
-            <Preferences className="max-sm:hidden" />
+          {/* Phones: logo · theme/language · menu (like Rentigo). */}
+          <div className="flex items-center gap-2 sm:hidden">
+            <Preferences compact />
+            <LandingMenu openLabel={dict.nav.openMenu} closeLabel={dict.nav.closeMenu}>
+              <nav className="grid" aria-label={t.nav.sections}>
+                {[
+                  ["#how", t.nav.how],
+                  ["#features", t.nav.features],
+                  ["#copilot", t.nav.copilot],
+                  ["#faq", t.nav.faq],
+                ].map(([href, label]) => (
+                  <a key={href} href={href} className="flex min-h-12 items-center border-b border-line/70 text-base font-medium">
+                    {label}
+                  </a>
+                ))}
+              </nav>
+              {user ? (
+                <Link href="/dashboard" className={`${primaryButton} mt-4 w-full`}>
+                  {t.openDashboard}
+                </Link>
+              ) : (
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <Link href="/login" className={secondaryButton}>
+                    {t.signIn}
+                  </Link>
+                  <Link href="/signup" className={primaryButton}>
+                    {t.getStarted}
+                  </Link>
+                </div>
+              )}
+            </LandingMenu>
+          </div>
+          <div className="flex items-center gap-2 max-sm:hidden">
+            <Preferences />
             {user ? (
               <Link href="/dashboard" className={primaryButton}>
                 {t.openDashboard}
@@ -232,7 +266,6 @@ export default async function Home() {
       <footer className="mt-auto border-t border-line">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-sm text-muted sm:px-6">
           <Logo />
-          <Preferences className="sm:hidden" />
           <span>
             © 2026 · {t.builtBy}{" "}
             <a href="https://arianitxhafa.github.io" className="font-semibold text-fg hover:text-brand">
