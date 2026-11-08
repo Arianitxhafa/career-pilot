@@ -50,6 +50,8 @@ export async function saveApplication(_prev: SaveState, formData: FormData): Pro
     salary_range: text(formData, "salary_range", 60),
     job_url: jobUrl,
     notes: text(formData, "notes", 4000),
+    // Only sent by "Import from a job link"; left out otherwise so saving never clears an existing job post.
+    ...(text(formData, "job_description", 20000) ? { job_description: text(formData, "job_description", 20000) } : {}),
   };
 
   const { error } = id

@@ -7,6 +7,7 @@ import { BarChart3, CalendarDays, FileUser, KanbanSquare, LogOut, Menu, Radar, X
 import { Logo } from "./Logo";
 import { signOut } from "@/app/(auth)/actions";
 import { Preferences } from "./Preferences";
+import { InstallAppButton } from "./Pwa";
 import { useT } from "@/i18n/client";
 
 type NavItem = { href: string; key: "board" | "cv" | "match" | "calendar" | "insights"; icon: LucideIcon; ready: boolean; code: string };
@@ -92,6 +93,7 @@ export function AppSidebar({ name, email, isDemo, stats }: { name: string; email
       </nav>
 
       <div className="mt-auto" aria-hidden />
+      <InstallAppButton />
       {/* On phones the toggles live in the top bar instead. */}
       <Preferences className="max-md:hidden" />
 

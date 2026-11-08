@@ -10,6 +10,7 @@ import { deleteApplication, saveApplication } from "@/app/dashboard/actions";
 import { toast } from "./Toaster";
 import type { Analysis } from "@/app/dashboard/copilot-actions";
 import { CopilotPanel } from "./CopilotPanel";
+import { ImportFromLink } from "./ImportFromLink";
 import { useT } from "@/i18n/client";
 
 export type DialogTab = "details" | "plan" | "people" | "history" | "copilot";
@@ -129,6 +130,7 @@ function DialogForm({ editing, close }: { editing: NonNullable<Props["editing"]>
   const [, startSave] = useTransition();
   const dict = useT();
   const t = dict.dialog;
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (!state?.ok) return;
@@ -138,6 +140,7 @@ function DialogForm({ editing, close }: { editing: NonNullable<Props["editing"]>
 
   return (
     <form
+      ref={formRef}
       // Submit manually so React doesn't reset the fields when validation fails.
       onSubmit={(e) => {
         e.preventDefault();
@@ -148,6 +151,9 @@ function DialogForm({ editing, close }: { editing: NonNullable<Props["editing"]>
     >
 
       {app && <input type="hidden" name="id" value={app.id} />}
+      {/* Filled by "Import from a job link"; saved only when present, so editing never clears a job post. */}
+      <input type="hidden" name="job_description" defaultValue="" />
+      {!app && <ImportFromLink form={formRef} />}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="grid gap-1.5 text-sm font-medium">

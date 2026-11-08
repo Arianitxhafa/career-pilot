@@ -22,6 +22,9 @@ CareerPilot keeps every job application on one Kanban board — from the first s
 - **CV from PDF** — upload or drop your CV as a PDF; the text is pulled out right in the browser with PDF.js (the file never leaves the device), cleaned up (broken hyphenation, wrapped lines, icon-font glyphs) and the skills it shows appear live as chips
 - **Job match** — your CV scored against every job you're still pursuing, best match first, with the missing skills per job and a **Learn next** list: the skills that would add the most points across all your jobs, worked out by re-scoring each job with the skill added
 - **Cover-letter templates** — formal, friendly, short email or student/intern, in English or Albanian; filled in with the company, role, the matching skills and the CV project that uses most of them; edit, copy or download as .txt — free, no API key needed
+- **Import a job from a link** — paste a job ad and the company, role, location, salary and full job post are filled in. Reads schema.org `JobPosting` data (JSON-LD) that most job boards publish, the public Greenhouse API, and KosovaJob pages, with Open Graph tags as a fallback. The server-side fetch is guarded against SSRF: http(s) on standard ports only, every host and redirect must resolve to public addresses, plus a timeout, a size cap and a per-user rate limit
+- **CSV export** — every application with its stage, dates and latest match score, in English or Albanian; UTF-8 BOM for Excel and protection against spreadsheet formula injection
+- **Installable app (PWA)** — web app manifest, maskable icons and an iPhone home-screen icon; "Install app" uses the browser's prompt where there is one and shows the Add to Home Screen steps on iPhone. A small service worker shows an offline page and never caches private data
 - **Weekly goal** — set how many applications to send a week, with a progress ring and a week streak
 - **People & history** — recruiters and interviewers per application (email, phone, LinkedIn), and a timeline of every stage change written by a Postgres trigger
 - **One-click demo** — an anonymous Supabase session gets a private board with 11 applications, a CV and co-pilot scores; a trigger in a private schema deletes demo accounts (and, by cascade, their data) after 24 hours
@@ -39,8 +42,6 @@ CareerPilot keeps every job application on one Kanban board — from the first s
   - **Free keyword matcher** (`src/lib/matcher.ts`, unit-tested): detects 70+ technologies by alias, weighs nice-to-haves at half and runs instantly with no API costs
   - **AI mode (Claude)**: switches on automatically when `ANTHROPIC_API_KEY` is set, and adds a deeper analysis and a tailored cover letter
 
-### Coming next
-- Import a job from a link, installable app (PWA) and CSV export
 
 ## 🛠 Tech stack
 
@@ -68,7 +69,7 @@ CareerPilot keeps every job application on one Kanban board — from the first s
 npm install
 cp .env.local.example .env.local   # add your Supabase URL, publishable key and Anthropic API key
 npm run dev
-npm test        # unit tests: matcher, CV tools, calendar/.ics and insights maths (Node's built-in test runner)
+npm test        # unit tests: matcher, CV tools, job import, SSRF guard, CSV, calendar/.ics and insights maths (Node's built-in test runner)
 ```
 
 1. Create a Supabase project and run `supabase/schema.sql` in the SQL editor.

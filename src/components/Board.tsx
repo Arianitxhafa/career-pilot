@@ -6,7 +6,7 @@ import { loadSampleData, moveApplication } from "@/app/dashboard/actions";
 import { ApplicationDialog } from "./ApplicationDialog";
 import { toast } from "./Toaster";
 import { primaryButton, secondaryButton } from "./ui";
-import { Plus, Search } from "lucide-react";
+import { Download, Plus, Search } from "lucide-react";
 import type { Analysis } from "@/app/dashboard/copilot-actions";
 import type { Contact, HistoryEntry } from "@/lib/applications";
 import { formatDate, nextEventByApplication, whenLabel, EVENT_META, type AppEvent } from "@/lib/events";
@@ -125,9 +125,14 @@ export function Board({ applications, analyses, hasCv, cv, name, aiEnabled, even
             className="w-full rounded-xl border border-line bg-surface py-2.5 pr-3 pl-9 text-sm shadow-card outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/15"
           />
         </div>
-        <button onClick={() => setEditing({ status: "saved" })} className={`${primaryButton} group`}>
-          <Plus className="size-4 transition group-hover:rotate-90" /> {t.newApplication}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <a href="/dashboard/export/csv" download className={secondaryButton} title={dict.export.title}>
+            <Download className="size-4" aria-hidden /> {dict.export.button}
+          </a>
+          <button onClick={() => setEditing({ status: "saved" })} className={`${primaryButton} group`}>
+            <Plus className="size-4 transition group-hover:rotate-90" /> {t.newApplication}
+          </button>
+        </div>
       </div>
 
       <div className="-mx-4 flex flex-1 snap-x gap-4 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:px-6 lg:grid lg:grid-cols-5 lg:overflow-visible">

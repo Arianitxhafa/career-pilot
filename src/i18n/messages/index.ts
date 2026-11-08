@@ -3,14 +3,15 @@ import { auth } from "./auth";
 import { board } from "./board";
 import { copilot } from "./copilot";
 import { cvtools } from "./cvtools";
+import { tools } from "./tools";
 import { insights } from "./insights";
 import { landing } from "./landing";
 
 // Each namespace keeps English and Albanian side by side; `sq` is typed as `typeof en`,
 // so a missing or misspelled key fails the type check.
 export const dictionaries = {
-  en: { ...app.en, ...board.en, ...copilot.en, ...cvtools.en, ...insights.en, auth: auth.en, landing: landing.en },
-  sq: { ...app.sq, ...board.sq, ...copilot.sq, ...cvtools.sq, ...insights.sq, auth: auth.sq, landing: landing.sq },
+  en: { ...app.en, ...board.en, ...copilot.en, ...cvtools.en, ...tools.en, ...insights.en, auth: auth.en, landing: landing.en },
+  sq: { ...app.sq, ...board.sq, ...copilot.sq, ...cvtools.sq, ...tools.sq, ...insights.sq, auth: auth.sq, landing: landing.sq },
 };
 
 export type Dict = (typeof dictionaries)["en"];
