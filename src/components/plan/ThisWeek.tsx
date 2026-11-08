@@ -26,7 +26,7 @@ export function ThisWeek({ events, applications, dict, locale }: { events: AppEv
         <h2 id="this-week" className="flex items-center gap-2 font-mono text-xs font-bold tracking-[0.18em] uppercase">
           <CalendarDays className="size-4 text-brand" aria-hidden /> {t.title}
         </h2>
-        <Link href="/dashboard/calendar" className="text-xs font-semibold text-brand hover:underline">
+        <Link href="/dashboard/calendar" className="inline-flex min-h-8 items-center text-xs font-semibold text-brand hover:underline">
           {t.openCalendar}
         </Link>
       </div>
@@ -35,11 +35,11 @@ export function ThisWeek({ events, applications, dict, locale }: { events: AppEv
           <CloudSun className="size-4 text-amber" aria-hidden /> {t.emptyA} <b className="font-semibold">{t.emptyPlan}</b> {t.emptyB}
         </p>
       ) : (
-        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid grid-cols-[minmax(0,1fr)] gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((e) => {
             const w = whenLabel(e, now, locale);
             return (
-              <li key={e.id}>
+              <li key={e.id} className="min-w-0">
                 <Link
                   href={`/dashboard?open=${e.application_id}&tab=plan`}
                   className={`flex items-center gap-3 rounded-xl border p-3 transition hover:-translate-y-0.5 hover:border-brand/40 ${w.urgent ? "border-rose-500/30 bg-rose-500/[0.05]" : "border-line"}`}

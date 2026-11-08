@@ -37,7 +37,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <span className="font-semibold">{t.demoBanner.title}</span> <span className="text-muted">{t.demoBanner.text}</span>
             </p>
             <form action={leaveDemo} className="max-sm:basis-full max-sm:pl-8">
-              <button className="font-semibold text-brand underline-offset-4 hover:underline">{t.demoBanner.cta}</button>
+              <button className="min-h-8 font-semibold text-brand underline-offset-4 hover:underline">{t.demoBanner.cta}</button>
             </form>
           </div>
         )}

@@ -24,7 +24,7 @@ export default async function Home() {
       <header className="sticky top-0 z-30 border-b border-line/60 bg-bg/75 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
           <Logo />
-          <nav className="hidden items-center gap-6 text-sm text-muted md:flex" aria-label={t.nav.sections}>
+          <nav className="hidden items-center gap-6 text-sm whitespace-nowrap text-muted lg:flex" aria-label={t.nav.sections}>
             <a href="#how" className="transition hover:text-fg">{t.nav.how}</a>
             <a href="#features" className="transition hover:text-fg">{t.nav.features}</a>
             <a href="#copilot" className="transition hover:text-fg">{t.nav.copilot}</a>
@@ -38,7 +38,7 @@ export default async function Home() {
               </Link>
             ) : (
               <>
-                <Link href="/login" className="hidden rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-surface-2 sm:inline-flex">
+                <Link href="/login" className="hidden rounded-xl px-3 py-2 text-sm font-semibold whitespace-nowrap transition hover:bg-surface-2 sm:inline-flex">
                   {t.signIn}
                 </Link>
                 <Link href="/signup" className={primaryButton}>
@@ -56,12 +56,12 @@ export default async function Home() {
           <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[40rem] rounded-full bg-brand/15 blur-3xl" />
           <div aria-hidden className="pointer-events-none absolute bottom-0 left-[-12%] size-[28rem] rounded-full bg-amber/15 blur-3xl" />
           <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 pt-14 pb-20 sm:px-6 sm:pb-44 lg:grid-cols-[1.05fr_1fr] lg:pt-20">
-            <div className="animate-rise">
+            <div className="min-w-0 animate-rise">
               <p className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-muted">
                 <span className="size-1.5 rounded-full bg-emerald-500" /> {t.badge}
               </p>
               <h1 className="mt-6 font-display text-5xl leading-[0.98] font-bold tracking-tight text-balance sm:text-7xl">
-                {t.heroA} <span className="relative whitespace-nowrap text-brand">{t.heroB}</span>
+                {t.heroA} <span className="relative text-brand sm:whitespace-nowrap">{t.heroB}</span>
               </h1>
               <p className="mt-6 max-w-lg text-lg text-muted text-balance">
                 {t.heroText}
@@ -81,7 +81,7 @@ export default async function Home() {
               </ul>
             </div>
 
-            <div className="relative animate-rise [animation-delay:150ms]">
+            <div className="relative min-w-0 animate-rise [animation-delay:150ms]">
               <DeparturesBoard />
               {/* Floating boarding pass */}
               <div className="pass absolute top-[calc(100%+0.75rem)] left-10 hidden w-64 rotate-[-4deg] animate-float rounded-2xl border border-line bg-surface p-4 shadow-card sm:block lg:-left-10">

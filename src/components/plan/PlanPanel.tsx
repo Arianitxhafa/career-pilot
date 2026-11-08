@@ -159,10 +159,10 @@ export function PlanPanel({ app, events }: { app: Application; events: AppEvent[
           <input type="hidden" name="kind" value={kind} />
         </div>
         <input name="title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} required aria-label={t.title} className={inputClass} />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_120px_130px]">
+        <div className="grid grid-cols-1 gap-3 min-[460px]:grid-cols-2 sm:grid-cols-[1fr_120px_130px]">
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required aria-label={t.date} className={inputClass} />
           <input type="time" value={time} onChange={(e) => setTime(e.target.value)} aria-label={t.time} className={inputClass} />
-          <select name="duration_minutes" defaultValue="60" aria-label={t.duration} className={`${inputClass} col-span-2 sm:col-span-1`}>
+          <select name="duration_minutes" defaultValue="60" aria-label={t.duration} className={`${inputClass} min-[460px]:col-span-2 sm:col-span-1`}>
             {Object.entries(t.durations).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}

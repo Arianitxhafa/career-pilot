@@ -82,10 +82,10 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
             </div>
           </div>
           <div className="overflow-x-auto">
-            <div className="min-w-[44rem]">
+            <div className="sm:min-w-[44rem]">
               <div className="grid grid-cols-7 border-b border-line font-mono text-[10px] font-bold tracking-[0.18em] text-muted uppercase">
                 {t.weekdays.map((d) => (
-                  <div key={d} className="px-2 py-2">
+                  <div key={d} className="px-1 py-2 text-center tracking-normal sm:px-2 sm:text-left sm:tracking-[0.18em]">
                     {d}
                   </div>
                 ))}
@@ -96,15 +96,23 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                     const inMonth = day.startsWith(monthPrefix);
                     const list = byDay.get(day) ?? [];
                     return (
-                      <div key={day} className={`min-h-28 border-r border-line p-1.5 last:border-r-0 ${inMonth ? "" : "bg-surface-2/40"}`}>
+                      <div key={day} className={`min-h-14 border-r border-line p-1 last:border-r-0 sm:min-h-28 sm:p-1.5 ${inMonth ? "" : "bg-surface-2/40"}`}>
                         <p
-                          className={`mb-1 grid size-6 place-items-center rounded-full font-mono text-xs ${
+                          className={`mx-auto mb-1 grid size-6 place-items-center rounded-full font-mono text-xs sm:mx-0 ${
                             day === today ? "bg-brand font-bold text-brand-ink" : inMonth ? "text-fg" : "text-muted/60"
                           }`}
                         >
                           {Number(day.slice(8))}
                         </p>
-                        <ul className="grid gap-1">
+                        {/* Phones: one coloured dot per event; the list below has the details. */}
+                        {list.length > 0 && (
+                          <p className="flex flex-wrap justify-center gap-1 sm:hidden" aria-hidden>
+                            {list.map((e) => (
+                              <span key={e.id} className={`size-1.5 rounded-full ${EVENT_META[e.kind].dot} ${e.done ? "opacity-40" : ""}`} />
+                            ))}
+                          </p>
+                        )}
+                        <ul className="hidden gap-1 sm:grid">
                           {list.map((e) => (
                             <li key={e.id}>
                               <Link
