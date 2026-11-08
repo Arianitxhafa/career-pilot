@@ -53,6 +53,9 @@ Nice to have
 
 const DOTNET_POST = `Junior .NET Developer — Kodra Studio (Prishtina · Hybrid)
 
+About the role
+You'll join a small team building booking and payment systems for clients across the region.
+
 Requirements
 - C# and .NET
 - SQL Server or PostgreSQL
@@ -65,6 +68,9 @@ Nice to have
 - Angular`;
 
 const FULLSTACK_POST = `Full-Stack Intern — Pixelforge (Prishtina)
+
+About the role
+A paid six-month internship: you'll ship features across our web products with a mentor at your side.
 
 Requirements
 - JavaScript, Node.js and Express
@@ -79,6 +85,9 @@ Nice to have
 
 const QA_POST = `QA Automation Intern — Tessera (Mitrovica)
 
+About the role
+Help us automate the tests behind our logistics platform and catch bugs before our customers do.
+
 Requirements
 - JavaScript or TypeScript
 - End-to-end testing with Playwright or Cypress
@@ -91,6 +100,9 @@ Nice to have
 - Python`;
 
 const LUMEN_POST = `Frontend Engineer — Lumen Apps (Remote)
+
+About the role
+You'll own the web app our customers use every day, from new features to performance and accessibility.
 
 Requirements
 - React and TypeScript

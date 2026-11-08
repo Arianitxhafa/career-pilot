@@ -75,6 +75,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           applications={applications}
           analyses={analyses}
           hasCv={hasCv}
+          cv={hasCv ? profile!.cv_text : ""}
+          name={user.is_anonymous ? null : ((user.user_metadata?.full_name as string | undefined) ?? null)}
           aiEnabled={aiEnabled}
           events={events}
           contacts={(contactRows ?? []) as Contact[]}

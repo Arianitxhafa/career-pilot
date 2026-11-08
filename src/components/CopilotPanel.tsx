@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { Application } from "@/lib/applications";
 import {
   analyzeApplication,
@@ -10,11 +10,14 @@ import {
 import { useLocale, useT } from "@/i18n/client";
 import { formatDate } from "@/lib/events";
 import type { Dict } from "@/i18n/messages";
+import { coverLetter, LETTER_TEMPLATES, MIN_JOB_POST, type LetterLang, type LetterTemplate } from "@/lib/cvtools";
 
 type Props = {
   app: Application;
   initial?: Analysis;
   hasCv: boolean;
+  cv: string;
+  name: string | null;
   aiEnabled: boolean;
 };
 
@@ -24,13 +27,14 @@ function scoreTone(score: number, t: Dict["copilot"]) {
   return { color: "#f43f5e", label: t.gaps };
 }
 
-export function CopilotPanel({ app, initial, hasCv, aiEnabled }: Props) {
+export function CopilotPanel({ app, initial, hasCv, cv, name, aiEnabled }: Props) {
   const [state, action, pending] = useActionState(
     analyzeApplication,
     undefined,
   );
   const [, startAnalyze] = useTransition();
   const [copied, setCopied] = useState(false);
+  const [jobPost, setJobPost] = useState(app.job_description ?? "");
   const analysis = state?.analysis ?? initial;
   const t = useT().copilot;
 
@@ -67,7 +71,8 @@ export function CopilotPanel({ app, initial, hasCv, aiEnabled }: Props) {
           {t.jobPost}
           <textarea
             name="job_description"
-            defaultValue={app.job_description ?? ""}
+            value={jobPost}
+            onChange={(e) => setJobPost(e.target.value)}
             rows={6}
             maxLength={20000}
             placeholder={t.jobPostPh}
@@ -119,7 +124,127 @@ export function CopilotPanel({ app, initial, hasCv, aiEnabled }: Props) {
           }}
         />
       )}
+
+      <LetterBuilder app={app} cv={cv} name={name} jobPost={jobPost} />
     </div>
+  );
+}
+
+/** Free cover-letter templates, filled from the CV and the job post as they are typed. */
+function LetterBuilder({ app, cv, name, jobPost }: { app: Application; cv: string; name: string | null; jobPost: string }) {
+  const dict = useT();
+  const t = dict.letters;
+  const locale = useLocale();
+  const [template, setTemplate] = useState<LetterTemplate>("formal");
+  const [lang, setLang] = useState<LetterLang>(locale);
+  const [edited, setEdited] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const ready = jobPost.trim().length >= MIN_JOB_POST;
+  const generated = useMemo(
+    () => (ready ? coverLetter(template, { company: app.company, position: app.position, name, cv, jobPost }, lang) : ""),
+    [ready, template, app.company, app.position, name, cv, jobPost, lang],
+  );
+  const text = edited ?? generated;
+  const section = useRef<HTMLElement>(null);
+  // "Cover letter" links from the Job match page end in #letter: bring the builder into view once the dialog is open.
+  useEffect(() => {
+    if (window.location.hash === "#letter") section.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, []);
+  const chip = (active: boolean) =>
+    `rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${active ? "bg-brand text-brand-ink shadow-sm" : "bg-surface-2 text-muted hover:text-fg"}`;
+
+  function download() {
+    const url = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
+    const a = Object.assign(document.createElement("a"), {
+      href: url,
+      download: `${lang === "sq" ? "Leter motivuese" : "Cover letter"} - ${app.company.replace(/[\/:*?"<>|]+/g, " ").trim()}.txt`,
+    });
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <section ref={section} id="letter" aria-labelledby={`letter-${app.id}`} className="grid gap-3 rounded-2xl border border-line bg-surface-2/40 p-4">
+      <div>
+        <h3 id={`letter-${app.id}`} className="text-xs font-semibold tracking-wider text-muted uppercase">
+          {t.title}
+        </h3>
+        <p className="mt-1 text-xs text-muted">{ready ? t.text : t.needPost}</p>
+      </div>
+      {ready && (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div role="radiogroup" aria-label={t.style} className="flex flex-wrap gap-1.5">
+              {LETTER_TEMPLATES.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={template === id}
+                  onClick={() => {
+                    setTemplate(id);
+                    setEdited(null);
+                  }}
+                  className={chip(template === id)}
+                >
+                  {t.templates[id]}
+                </button>
+              ))}
+            </div>
+            <div role="radiogroup" aria-label={t.language} className="flex gap-1">
+              {(["en", "sq"] as const).map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  role="radio"
+                  aria-checked={lang === l}
+                  onClick={() => {
+                    setLang(l);
+                    setEdited(null);
+                  }}
+                  className={`${chip(lang === l)} font-mono uppercase`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <textarea
+            value={text}
+            onChange={(e) => setEdited(e.target.value)}
+            rows={14}
+            aria-label={t.label}
+            lang={lang}
+            className="w-full resize-y rounded-xl border border-line bg-surface p-3 text-sm leading-relaxed text-fg outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/15"
+          />
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {edited !== null && (
+              <p className="mr-auto text-xs text-muted">
+                {t.edited} ·{" "}
+                <button type="button" onClick={() => setEdited(null)} className="font-semibold text-brand hover:underline">
+                  {t.reset}
+                </button>
+              </p>
+            )}
+            <button type="button" onClick={download} className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted hover:bg-surface-2 hover:text-fg">
+              {t.download}
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                navigator.clipboard?.writeText(text).then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                })
+              }
+              className="rounded-lg bg-brand-soft px-2.5 py-1.5 text-xs font-semibold text-brand hover:brightness-95"
+            >
+              {copied ? dict.copilot.copied : dict.copilot.copy}
+            </button>
+          </div>
+        </>
+      )}
+    </section>
   );
 }
 
@@ -215,7 +340,7 @@ function AnalysisView({
         </ol>
       </div>
 
-      {result.cover_letter ? (
+      {result.cover_letter && (
         <div>
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-semibold tracking-wider text-muted uppercase">
@@ -233,10 +358,6 @@ function AnalysisView({
             {result.cover_letter}
           </p>
         </div>
-      ) : (
-        <p className="rounded-xl border border-dashed border-line px-3.5 py-2.5 text-xs text-muted">
-          {t.aiSoon}
-        </p>
       )}
 
       <p className="text-xs text-muted">

@@ -26,6 +26,8 @@ type BoardProps = {
   applications: Application[];
   analyses: Record<string, Analysis>;
   hasCv: boolean;
+  cv: string;
+  name: string | null;
   aiEnabled: boolean;
   events: AppEvent[];
   contacts: Contact[];
@@ -35,7 +37,7 @@ type BoardProps = {
   openTab?: DialogTab;
 };
 
-export function Board({ applications, analyses, hasCv, aiEnabled, events, contacts, history, openId, openTab }: BoardProps) {
+export function Board({ applications, analyses, hasCv, cv, name, aiEnabled, events, contacts, history, openId, openTab }: BoardProps) {
   const [, startTransition] = useTransition();
   const [apps, moveOptimistic] = useOptimistic(applications, (state, move: { id: string; status: Status }) =>
     state.map((a) => (a.id === move.id ? { ...a, status: move.status } : a))
@@ -77,6 +79,8 @@ export function Board({ applications, analyses, hasCv, aiEnabled, events, contac
       onClose={() => setEditing(null)}
       analysis={editing?.app ? analyses[editing.app.id] : undefined}
       hasCv={hasCv}
+      cv={cv}
+      name={name}
       aiEnabled={aiEnabled}
       events={editingId ? events.filter((e) => e.application_id === editingId) : []}
       contacts={editingId ? contacts.filter((c) => c.application_id === editingId) : []}

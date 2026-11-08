@@ -19,6 +19,8 @@ type Props = {
   onClose: () => void;
   analysis?: Analysis;
   hasCv: boolean;
+  cv: string;
+  name: string | null;
   aiEnabled: boolean;
   events: AppEvent[];
   contacts: Contact[];
@@ -28,7 +30,7 @@ type Props = {
 const field =
   "w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-fg outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-4 focus:ring-brand/15";
 
-export function ApplicationDialog({ editing, onClose, analysis, hasCv, aiEnabled, events, contacts, history }: Props) {
+export function ApplicationDialog({ editing, onClose, analysis, hasCv, cv, name, aiEnabled, events, contacts, history }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -52,6 +54,8 @@ export function ApplicationDialog({ editing, onClose, analysis, hasCv, aiEnabled
           editing={editing}
           analysis={analysis}
           hasCv={hasCv}
+          cv={cv}
+          name={name}
           aiEnabled={aiEnabled}
           events={events}
           contacts={contacts}
@@ -65,7 +69,7 @@ export function ApplicationDialog({ editing, onClose, analysis, hasCv, aiEnabled
 
 type BodyProps = Omit<Props, "onClose" | "editing"> & { editing: NonNullable<Props["editing"]>; close: () => void };
 
-function DialogBody({ editing, analysis, hasCv, aiEnabled, events, contacts, history, close }: BodyProps) {
+function DialogBody({ editing, analysis, hasCv, cv, name, aiEnabled, events, contacts, history, close }: BodyProps) {
   const app = editing.app;
   const [tab, setTab] = useState<DialogTab>(editing.tab ?? "details");
   const tabClass = (active: boolean) =>
@@ -103,7 +107,7 @@ function DialogBody({ editing, analysis, hasCv, aiEnabled, events, contacts, his
       )}
 
       {app && tab === "copilot" ? (
-        <CopilotPanel app={app} initial={analysis} hasCv={hasCv} aiEnabled={aiEnabled} />
+        <CopilotPanel app={app} initial={analysis} hasCv={hasCv} cv={cv} name={name} aiEnabled={aiEnabled} />
       ) : app && tab === "plan" ? (
         <PlanPanel app={app} events={events} />
       ) : app && tab === "people" ? (

@@ -3,17 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { BarChart3, CalendarDays, FileUser, KanbanSquare, LogOut, Menu, X, type LucideIcon } from "lucide-react";
+import { BarChart3, CalendarDays, FileUser, KanbanSquare, LogOut, Menu, Radar, X, type LucideIcon } from "lucide-react";
 import { Logo } from "./Logo";
 import { signOut } from "@/app/(auth)/actions";
 import { Preferences } from "./Preferences";
 import { useT } from "@/i18n/client";
 
-type NavItem = { href: string; key: "board" | "cv" | "calendar" | "insights"; icon: LucideIcon; ready: boolean; code: string };
+type NavItem = { href: string; key: "board" | "cv" | "match" | "calendar" | "insights"; icon: LucideIcon; ready: boolean; code: string };
 
 const NAV: NavItem[] = [
   { href: "/dashboard", key: "board", icon: KanbanSquare, ready: true, code: "BRD" },
   { href: "/dashboard/cv", key: "cv", icon: FileUser, ready: true, code: "CVC" },
+  { href: "/dashboard/match", key: "match", icon: Radar, ready: true, code: "MTC" },
   { href: "/dashboard/calendar", key: "calendar", icon: CalendarDays, ready: true, code: "CAL" },
   { href: "/dashboard/insights", key: "insights", icon: BarChart3, ready: true, code: "INS" },
 ];
